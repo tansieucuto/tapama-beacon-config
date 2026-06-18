@@ -1,317 +1,566 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tapama Beacon Config</title>
-    <style>
-        html, body, div, span, h1, h2, h3, h4, h5, h6, p, a, button, input, select, textarea, label {
-            box-sizing: border-box; margin: 0; padding: 0;
-        }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            background: #121212; color: #e0e0e0; padding: 15px; max-width: 600px; margin: auto; line-height: 1.5;
-        }
-        h2 { text-align: center; color: #ffffff; margin-bottom: 20px; font-size: 22px; padding-top: 10px; }
-        button { 
-            padding: 14px; width: 100%; margin-top: 10px; cursor: pointer; 
-            background: #333333; color: #ffffff; border: 1px solid #444; border-radius: 6px;
-            font-weight: bold; font-size: 16px; transition: background 0.2s;
-        }
-        button:hover { background: #555555; }
-        button:disabled { background: #1a1a1a; color: #666666; border-color: #333; cursor: not-allowed; }
-        
-        #btnDisconnect, #btnFactory { background: #2a2a2a; border-color: #444; }
-        #btnReboot { background: #444444; }
-        #btnWriteSlot, #btnWriteGlobal { background: #3a3a3a; }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tapama Beacon Console</title>
+<style>
+  /* ---- Design tokens -------------------------------------------------- */
+  :root{
+    --ink:#0e141b;          /* nen sau */
+    --panel:#16202b;        /* panel */
+    --panel-2:#1d2a37;      /* panel sang hon */
+    --line:#2a3a49;         /* duong vien */
+    --txt:#e6edf3;          /* chu chinh */
+    --muted:#8aa0b3;        /* chu phu */
+    --amber:#f6a623;        /* accent: tin hieu beacon */
+    --amber-dim:#7a5512;
+    --green:#46c98b;        /* ket noi OK */
+    --red:#e5604d;          /* loi / nguy hiem */
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ink);color:var(--txt);font-family:var(--sans);
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--amber)}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 20px 80px}
 
-        input[type="text"], input[type="password"], input[type="number"], select { 
-            padding: 12px; width: 100%; background: #000000; color: #e0e0e0; 
-            border: 1px solid #444444; border-radius: 6px; margin-bottom: 15px;
-            font-size: 16px; outline: none;
-        }
-        input:focus, select:focus { border-color: #888888; }
-        input[type="range"] { width: 100%; margin-bottom: 15px; accent-color: #888888; }
-        
-        .tabs { display: flex; background: #1e1e1e; border-radius: 6px; border: 1px solid #333333; overflow: hidden; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 12px 5px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; color: #888888; border-bottom: 2px solid transparent; }
-        .tab-btn.active { border-bottom: 2px solid #aaaaaa; color: #ffffff; background: #121212; }
-        .tab-content { display: none; padding: 20px; background: #1e1e1e; border: 1px solid #333333; border-radius: 6px; }
-        .tab-content.active { display: block; }
-        .dynamic-field { display: none; }
-        
-        #log { 
-            background: #000000; padding: 12px; height: 180px; overflow-y: auto; 
-            font-family: ui-monospace, SFMono-Regular, Consolas, monospace; 
-            color: #aaaaaa; margin-top: 15px; border-radius: 6px; border: 1px solid #333333; font-size: 13px;
-        }
-        label { font-size: 14px; color: #aaaaaa; display: block; margin-bottom: 6px; font-weight: 500; }
-        .val-display { color: #ffffff; font-weight: bold; float: right; }
-        hr { border: none; border-top: 1px solid #333333; margin: 20px 0; }
-        
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(3px); z-index: 1000; }
-        .modal-content { background: #1e1e1e; margin: 40% auto; padding: 25px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #444444; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.8); }
-        .modal-content h3 { margin-bottom: 15px; color: #e0e0e0; }
-    </style>
+  /* ---- Header --------------------------------------------------------- */
+  header{display:flex;align-items:center;gap:14px;padding:18px 0 22px;border-bottom:1px solid var(--line)}
+  .sig{position:relative;width:34px;height:34px;flex:0 0 34px}
+  .sig .dot{position:absolute;inset:0;margin:auto;width:12px;height:12px;border-radius:50%;
+    background:var(--muted);transition:background .3s}
+  .sig.live .dot{background:var(--amber);box-shadow:0 0 0 0 var(--amber);animation:pulse 1.8s infinite}
+  .sig.conn .dot{background:var(--green)}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(246,166,35,.5)}70%{box-shadow:0 0 0 12px rgba(246,166,35,0)}100%{box-shadow:0 0 0 0 rgba(246,166,35,0)}}
+  h1{font-size:18px;margin:0;letter-spacing:.3px;font-weight:600}
+  h1 span{color:var(--amber);font-family:var(--mono)}
+  .sub{color:var(--muted);font-size:13px;margin-top:2px}
+
+  /* ---- Cards ---------------------------------------------------------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+    padding:18px 18px;margin-top:18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);
+    margin:0 0 14px;font-weight:600}
+  .row{display:flex;flex-wrap:wrap;gap:14px}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:140px;flex:1}
+  label{font-size:12px;color:var(--muted)}
+  input,select{background:var(--panel-2);border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;padding:9px 10px;font-size:14px;font-family:var(--sans);width:100%}
+  input.mono{font-family:var(--mono);letter-spacing:.5px}
+  input:focus,select:focus{outline:2px solid var(--amber-dim);outline-offset:0;border-color:var(--amber)}
+  input:disabled,select:disabled{opacity:.5}
+  .chk{flex-direction:row;align-items:center;gap:8px;min-width:0;flex:0 0 auto}
+  .chk input{width:auto}
+
+  /* ---- Buttons -------------------------------------------------------- */
+  button{font-family:var(--sans);font-size:14px;font-weight:600;border-radius:8px;
+    padding:10px 16px;border:1px solid var(--line);background:var(--panel-2);color:var(--txt);
+    cursor:pointer;transition:.15s}
+  button:hover:not(:disabled){border-color:var(--amber);color:var(--amber)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+  button.primary:hover:not(:disabled){filter:brightness(1.08);color:#1a1206}
+  button.danger{border-color:var(--red);color:var(--red)}
+  button.danger:hover:not(:disabled){background:var(--red);color:#fff}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+
+  .pill{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-family:var(--mono);text-align:right}
+
+  /* ---- Log ------------------------------------------------------------ */
+  #log{font-family:var(--mono);font-size:12px;background:#0a0f14;border:1px solid var(--line);
+    border-radius:8px;padding:10px;height:130px;overflow:auto;white-space:pre-wrap;color:var(--muted)}
+  .log-ok{color:var(--green)}.log-err{color:var(--red)}.log-warn{color:var(--amber)}
+
+  .hidden{display:none!important}
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+  .frame-fields{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+  .slotbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .slotbtns button{padding:8px 14px}
+  .slotbtns button.active{background:var(--amber);color:#1a1206;border-color:var(--amber)}
+  .raw{font-family:var(--mono);font-size:11px;color:var(--muted);word-break:break-all;margin-top:10px}
+</style>
 </head>
 <body>
-    <h2>Tapama Beacon Config</h2>
-    <button id="btnConnect">Connect BLE</button>
+<div class="wrap">
 
-    <div id="modalAuth" class="modal">
-        <div class="modal-content">
-            <h3>Authentication (<span id="timeAuth">20</span>s left)</h3>
-            <input type="password" id="inpPassword" placeholder="Enter Password">
-            <button id="btnAuth">Unlock</button>
-        </div>
+  <header>
+    <div class="sig" id="sig"><div class="dot"></div></div>
+    <div>
+      <h1>Tapama Beacon Console <span id="hdrName"></span></h1>
+      <div class="sub" id="hdrSub">Chua ket noi · can Chrome/Edge + HTTPS hoac localhost</div>
+    </div>
+  </header>
+
+  <!-- KET NOI -->
+  <div class="card">
+    <h2>Ket noi</h2>
+    <div class="btnrow">
+      <button class="primary" id="btnConnect">Ket noi beacon</button>
+      <button id="btnDisconnect" disabled>Ngat</button>
+      <span class="pill" id="connState">offline</span>
+    </div>
+    <div class="note">Bo loc theo ten <code>tapama…</code>. iOS khong chay Web Bluetooth — dung Chrome tren Android/Windows/macOS/Linux.</div>
+  </div>
+
+  <!-- THONG TIN THIET BI -->
+  <div class="card hidden" id="cardInfo">
+    <h2>Thong tin thiet bi</h2>
+    <div id="devinfo"></div>
+  </div>
+
+  <!-- MO KHOA -->
+  <div class="card hidden" id="cardAuth">
+    <h2>Mo khoa cau hinh</h2>
+    <div class="row">
+      <div class="field"><label>Mat khau</label>
+        <input id="authPw" type="password" placeholder="museum123" value="museum123"/></div>
+      <div class="field" style="flex:0 0 auto;justify-content:flex-end">
+        <button class="primary" id="btnAuth">Mo khoa</button></div>
+    </div>
+    <div class="note" id="authNote">Mac dinh: <code>museum123</code>. Phai mo khoa truoc khi ghi.</div>
+  </div>
+
+  <!-- SLOT -->
+  <div class="card hidden" id="cardSlot">
+    <h2>Cau hinh slot</h2>
+    <div class="slotbtns" id="slotBtns"></div>
+
+    <div class="row">
+      <div class="field chk"><input type="checkbox" id="fEnabled"/><label for="fEnabled">Bat slot</label></div>
+      <div class="field chk"><input type="checkbox" id="fConnectable"/><label for="fConnectable">Connectable*</label></div>
+      <div class="field"><label>Loai frame</label>
+        <select id="fFrame">
+          <option value="0">iBeacon</option>
+          <option value="1">Eddystone-URL</option>
+          <option value="2">Eddystone-UID</option>
+          <option value="3">Custom (raw)</option>
+        </select></div>
     </div>
 
-    <div class="tabs">
-        <div class="tab-btn active" onclick="switchTab('tabGeneral')">General</div>
-        <div class="tab-btn" onclick="switchTab('tabSlot')">Slot Config</div>
-        <div class="tab-btn" onclick="switchTab('tabSys')">System</div>
+    <div class="row" style="margin-top:14px">
+      <div class="field"><label>Cong suat phat (dBm)</label>
+        <select id="fTx">
+          <option>-40</option><option>-20</option><option>-16</option><option>-12</option>
+          <option>-8</option><option>-4</option><option>0</option><option>2</option>
+          <option>3</option><option selected>4</option><option>5</option><option>6</option>
+          <option>7</option><option>8</option>
+        </select></div>
+      <div class="field"><label>Measured power (RSSI @1m/0m)</label>
+        <input id="fMeasured" type="number" value="-59" min="-128" max="127"/></div>
+      <div class="field"><label>Chu ky / khe (ms)</label>
+        <input id="fInterval" type="number" value="500" min="20" max="10000"/></div>
     </div>
 
-    <div id="tabGeneral" class="tab-content active">
-        <p style="margin-bottom: 8px;">Manufacturer: Tapama Tech</p>
-        <p style="margin-bottom: 15px;">Hardware: nRF52840</p>
-        <label>Allow Connection (Slot 1-6)</label>
-        <select id="cfgGlobalConn">
-            <option value="0">No</option>
-            <option value="1">Yes</option>
-        </select>
-        <button id="btnWriteGlobal">Save Global Connectable</button>
+    <div class="row" style="margin-top:14px">
+      <div class="field"><label>Nhan noi bo (khong phat song)</label>
+        <input id="fLabel" maxlength="24" placeholder="vd: Phong Trong Dong"/></div>
     </div>
 
-    <div id="tabSlot" class="tab-content">
-        <label>Select Slot (0-6)</label>
-        <select id="selSlot">
-            <option value="0">Slot 0 (Always Connectable)</option>
-            <option value="1">Slot 1</option>
-            <option value="2">Slot 2</option>
-            <option value="3">Slot 3</option>
-            <option value="4">Slot 4</option>
-            <option value="5">Slot 5</option>
-            <option value="6">Slot 6</option>
-        </select>
-        <button id="btnReadSlot">Read Slot Data</button>
-
-        <hr>
-        
-        <label>Slot Status</label>
-        <select id="cfgEnabled"><option value="0">Disable</option><option value="1">Enable</option></select>
-
-        <label>Frame Type</label>
-        <select id="cfgFrameType">
-            <option value="0">NO_DATA</option><option value="1">EDDYSTONE_UID</option>
-            <option value="2">EDDYSTONE_URL</option><option value="3">EDDYSTONE_TLM</option>
-            <option value="4">IBEACON</option><option value="5">INFO</option>
-        </select>
-
-        <label>Interval (ms) <span class="val-display" id="lblInterval">500</span></label>
-        <input type="range" id="cfgInterval" min="20" max="10240" step="10" value="500">
-
-        <label>Tx Power (dBm) <span class="val-display" id="lblTxPower">4</span></label>
-        <input type="range" id="cfgTxPower" min="0" max="13" step="1" value="9">
-
-        <label>RSSI at 0m/1m <span class="val-display" id="lblRssi">-59</span></label>
-        <input type="range" id="cfgRssi" min="-100" max="0" step="1" value="-59">
-
-        <div id="fUid" class="dynamic-field">
-            <label>Namespace ID (20 hex chars)</label>
-            <input type="text" id="cfgNid" maxlength="20">
-            <label>Instance ID (12 hex chars)</label>
-            <input type="text" id="cfgIid" maxlength="12">
-        </div>
-
-        <div id="fUrl" class="dynamic-field">
-            <label>URL String</label>
-            <input type="text" id="cfgUrl" maxlength="20">
-        </div>
-
-        <div id="fIbc" class="dynamic-field">
-            <label>UUID (32 hex chars)</label>
-            <input type="text" id="cfgUuid" maxlength="32">
-            <label>Major</label><input type="number" id="cfgMaj">
-            <label>Minor</label><input type="number" id="cfgMin">
-        </div>
-
-        <button id="btnWriteSlot">Write to RAM (Apply)</button>
+    <!-- iBeacon -->
+    <div class="frame-fields" id="ffIbeacon">
+      <div class="row">
+        <div class="field" style="flex:2"><label>UUID (32 hex)</label>
+          <input id="fUuid" class="mono" maxlength="32" placeholder="8ec76ea3666848da986675be8bc86f4d"/></div>
+        <div class="field"><label>Major</label><input id="fMajor" type="number" min="0" max="65535" value="1"/></div>
+        <div class="field"><label>Minor</label><input id="fMinor" type="number" min="0" max="65535" value="1"/></div>
+      </div>
     </div>
 
-    <div id="tabSys" class="tab-content">
-        <button id="btnReboot">Save to Flash & Reboot</button>
-        <button id="btnFactory">Factory Reset</button>
+    <!-- Eddystone-URL -->
+    <div class="frame-fields hidden" id="ffUrl">
+      <div class="row"><div class="field"><label>URL</label>
+        <input id="fUrl" maxlength="20" placeholder="https://tapama.vn"/></div></div>
+      <div class="note">Ho tro prefix http(s):// (www.) va hau to .com. URL ngan (≤17 ky tu sau ma hoa).</div>
     </div>
 
+    <!-- Eddystone-UID -->
+    <div class="frame-fields hidden" id="ffUid">
+      <div class="row">
+        <div class="field"><label>Namespace (20 hex)</label>
+          <input id="fNs" class="mono" maxlength="20" placeholder="00000000000000000000"/></div>
+        <div class="field"><label>Instance (12 hex)</label>
+          <input id="fInst" class="mono" maxlength="12" placeholder="000000000001"/></div>
+      </div>
+    </div>
+
+    <!-- Custom -->
+    <div class="frame-fields hidden" id="ffCustom">
+      <div class="row"><div class="field"><label>Payload hex (toi da 24 byte = 48 hex)</label>
+        <input id="fCustom" class="mono" maxlength="48" placeholder="ff4c0002..."/></div></div>
+      <div class="note">Phat duoi dang manufacturer-specific data.</div>
+    </div>
+
+    <div class="btnrow" style="margin-top:16px">
+      <button id="btnReadSlot">Doc lai slot</button>
+      <button class="primary" id="btnWriteSlot">Ghi slot xuong thiet bi (RAM)</button>
+    </div>
+    <div class="raw" id="slotRaw"></div>
+    <div class="note">*Connectable rieng tung slot chua co tac dung o firmware pha 1 (engine luon connectable de config). Ghi xuong RAM, phai “Luu &amp; khoi dong lai” moi vao flash.</div>
+  </div>
+
+  <!-- TOAN CUC -->
+  <div class="card hidden" id="cardGlobal">
+    <h2>Config thiet bi &amp; luu</h2>
+    <div class="row">
+      <div class="field"><label>So slot hoat dong</label>
+        <input id="gNumSlots" type="number" min="1" max="4" value="4"/></div>
+      <div class="field chk" style="align-self:flex-end;padding-bottom:9px">
+        <input type="checkbox" id="gPwEnabled" checked/><label for="gPwEnabled">Yeu cau mat khau</label></div>
+      <div class="field"><label>Doi mat khau (de trong = giu nguyen)</label>
+        <input id="gNewPw" type="text" maxlength="15" placeholder="••••••"/></div>
+      <div class="field" style="flex:0 0 auto;justify-content:flex-end">
+        <button id="btnWriteGlobal">Ghi toan cuc (RAM)</button></div>
+    </div>
+    <div class="btnrow" style="margin-top:16px">
+      <button class="primary" id="btnSave">Luu &amp; khoi dong lai</button>
+      <button class="danger" id="btnFactory">Factory reset</button>
+    </div>
+    <div class="note">“Luu &amp; khoi dong lai” ghi flash roi reboot — beacon se ngat ket noi (binh thuong).</div>
+  </div>
+
+  <!-- LOG -->
+  <div class="card">
+    <h2>Nhat ky</h2>
     <div id="log"></div>
+  </div>
 
-    <script>
-        const UUID_SVC = "a3c86500-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_AUTH = "a3c86501-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_GLOB = "a3c86502-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_SEL = "a3c86503-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_BASE = "a3c86504-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_CMD = "a3c86505-8ed3-4bdf-8a39-a01bebede295";
-        const UUID_DATA = "a3c86506-8ed3-4bdf-8a39-a01bebede295";
+</div>
 
-        const txPowerMap = [-40, -20, -16, -12, -8, -4, 0, 2, 3, 4, 5, 6, 7, 8];
+<script>
+"use strict";
 
-        let bleDevice, bleServer, charAuth, charGlob, charSel, charBase, charData, charCmd;
-        let authTimer, timeLeft = 20;
+/* ===================================================================== */
+/*  UUID + layout — PHAI khop firmware (uuids.h / config.h)              */
+/* ===================================================================== */
+const SVC   = 'a3c86500-8ed3-4bdf-8a39-a01bebede295';
+const C = {
+  auth:    'a3c86501-8ed3-4bdf-8a39-a01bebede295',
+  global:  'a3c86502-8ed3-4bdf-8a39-a01bebede295',
+  slotSel: 'a3c86503-8ed3-4bdf-8a39-a01bebede295',
+  slotCfg: 'a3c86504-8ed3-4bdf-8a39-a01bebede295',
+  command: 'a3c86505-8ed3-4bdf-8a39-a01bebede295',
+};
+const DIS = 0x180a;
 
-        function log(m) { 
-            let d = document.getElementById('log');
-            d.innerHTML += m + '<br>'; 
-            d.scrollTop = d.scrollHeight;
-        }
-        
-        function switchTab(id) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            event.target.classList.add('active');
-        }
+// Offset trong struct SlotConfig (packed) — khop bang trong README muc 6
+const OFF = { enabled:0, frame:1, conn:2, tx:3, measured:4, interval:5,
+  uuid:7, major:23, minor:25, ns:27, inst:37, url:43, customLen:64, customData:65, label:89 };
+const LEN = { uuid:16, ns:10, inst:6, url:21, customData:24, label:25 };
+const SLOTCFG_SIZE = 114;
 
-        document.getElementById('cfgInterval').oninput = (e) => document.getElementById('lblInterval').innerText = e.target.value;
-        document.getElementById('cfgRssi').oninput = (e) => document.getElementById('lblRssi').innerText = e.target.value;
-        document.getElementById('cfgTxPower').oninput = (e) => document.getElementById('lblTxPower').innerText = txPowerMap[e.target.value];
+const CMD = { SAVE:0x01, FACTORY:0x02, LOCK:0x03 };
 
-        document.getElementById('cfgFrameType').onchange = (e) => {
-            document.querySelectorAll('.dynamic-field').forEach(el => el.style.display = 'none');
-            let v = e.target.value;
-            if (v == '1') document.getElementById('fUid').style.display = 'block';
-            if (v == '2') document.getElementById('fUrl').style.display = 'block';
-            if (v == '4') document.getElementById('fIbc').style.display = 'block';
-        };
+/* ===================================================================== */
+/*  State                                                                */
+/* ===================================================================== */
+let device=null, server=null, svc=null, chars={}, dis={};
+let numSlots=4, selSlot=0, slotBuf=null, unlocked=false;
+let slotMeta=[];  // {enabled, interval} moi slot — de validate interval trung
 
-        document.getElementById('btnConnect').onclick = async () => {
-            try {
-                bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ namePrefix: 'tapama' }], optionalServices: [UUID_SVC] });
-                bleDevice.addEventListener('gattserverdisconnected', () => {
-                    log("Disconnected.");
-                    document.getElementById('modalAuth').style.display = 'none';
-                    clearInterval(authTimer);
-                });
-                bleServer = await bleDevice.gatt.connect();
-                let svc = await bleServer.getPrimaryService(UUID_SVC);
-                charAuth = await svc.getCharacteristic(UUID_AUTH);
-                charGlob = await svc.getCharacteristic(UUID_GLOB);
-                charSel = await svc.getCharacteristic(UUID_SEL);
-                charBase = await svc.getCharacteristic(UUID_BASE);
-                charData = await svc.getCharacteristic(UUID_DATA);
-                charCmd = await svc.getCharacteristic(UUID_CMD);
-                
-                document.getElementById('modalAuth').style.display = 'block';
-                timeLeft = 20;
-                authTimer = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('timeAuth').innerText = timeLeft;
-                    if(timeLeft <= 0) { clearInterval(authTimer); bleDevice.gatt.disconnect(); }
-                }, 1000);
-                
-                let gVal = await charGlob.readValue();
-                document.getElementById('cfgGlobalConn').value = gVal.getUint8(0);
-                
-            } catch(e) { log(e); }
-        };
+/* ===================================================================== */
+/*  Helpers                                                              */
+/* ===================================================================== */
+const $ = id => document.getElementById(id);
+function log(msg, cls){
+  const el=$('log'); const t=new Date().toLocaleTimeString();
+  el.innerHTML += `<div class="${cls||''}">[${t}] ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+const enc = new TextEncoder(), dec = new TextDecoder();
+function hexToBytes(h){ h=(h||'').replace(/[^0-9a-fA-F]/g,''); const o=[];
+  for(let i=0;i+1<h.length;i+=2) o.push(parseInt(h.substr(i,2),16)); return o; }
+function bytesToHex(arr){ return Array.from(arr).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function cstr(view, off, max){ let s=''; for(let i=0;i<max;i++){const c=view.getUint8(off+i); if(c===0)break; s+=String.fromCharCode(c);} return s; }
+function setCstr(u8, off, max, str){ for(let i=0;i<max;i++) u8[off+i]=0; const b=enc.encode(str||''); for(let i=0;i<Math.min(b.length,max-1);i++) u8[off+i]=b[i]; }
 
-        document.getElementById('btnAuth').onclick = async () => {
-            try {
-                await charAuth.writeValue(new TextEncoder().encode(document.getElementById('inpPassword').value));
-                clearInterval(authTimer);
-                document.getElementById('modalAuth').style.display = 'none';
-                log("Unlocked.");
-            } catch(e) { log(e); }
-        };
+// Hang doi GATT: Web Bluetooth khong cho 2 thao tac dong thoi
+let gattQ = Promise.resolve();
+function gatt(fn){ gattQ = gattQ.then(fn, fn); return gattQ; }
 
-        document.getElementById('btnWriteGlobal').onclick = async () => {
-            await charGlob.writeValue(new Uint8Array([parseInt(document.getElementById('cfgGlobalConn').value)]));
-            log("Global Connectable saved.");
-        };
+function setState(s){ // 'off' | 'live' | 'conn'
+  const sig=$('sig'); sig.classList.remove('live','conn');
+  if(s==='live') sig.classList.add('live');
+  if(s==='conn') sig.classList.add('conn');
+  $('connState').textContent = s==='conn'?'da ket noi':(s==='live'?'dang ket noi…':'offline');
+}
 
-        document.getElementById('btnReadSlot').onclick = async () => {
-            try {
-                await charSel.writeValue(new Uint8Array([parseInt(document.getElementById('selSlot').value)]));
-                let baseVal = await charBase.readValue();
-                let dataVal = await charData.readValue();
-                
-                document.getElementById('cfgEnabled').value = baseVal.getUint8(0);
-                
-                let ft = baseVal.getUint8(1);
-                document.getElementById('cfgFrameType').value = ft;
-                
-                let txPwr = baseVal.getInt8(2);
-                let txIdx = txPowerMap.indexOf(txPwr);
-                if(txIdx == -1) txIdx = 9;
-                document.getElementById('cfgTxPower').value = txIdx;
-                document.getElementById('lblTxPower').innerText = txPwr;
+/* ===================================================================== */
+/*  Connect                                                              */
+/* ===================================================================== */
+$('btnConnect').onclick = async () => {
+  if(!navigator.bluetooth){ log('Trinh duyet khong ho tro Web Bluetooth. Dung Chrome/Edge.', 'log-err'); return; }
+  try{
+    setState('live'); log('Mo hop thoai chon thiet bi…');
+    device = await navigator.bluetooth.requestDevice({
+      filters:[{ namePrefix:'tapama' }],
+      optionalServices:[ SVC, DIS ]
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    log('Ket noi GATT…');
+    server = await device.gatt.connect();
+    svc = await server.getPrimaryService(SVC);
+    chars.auth    = await svc.getCharacteristic(C.auth);
+    chars.global  = await svc.getCharacteristic(C.global);
+    chars.slotSel = await svc.getCharacteristic(C.slotSel);
+    chars.slotCfg = await svc.getCharacteristic(C.slotCfg);
+    chars.command = await svc.getCharacteristic(C.command);
 
-                let rssi = baseVal.getInt8(3);
-                document.getElementById('cfgRssi').value = rssi;
-                document.getElementById('lblRssi').innerText = rssi;
+    await readDeviceInfo();
+    await readGlobal();
+    await readAllSlots();
+    buildSlotButtons();
+    await selectSlot(0);
 
-                let interval = baseVal.getUint16(4, true);
-                document.getElementById('cfgInterval').value = interval;
-                document.getElementById('lblInterval').innerText = interval;
-                
-                if (ft == 1) {
-                    let nid = []; for(let i=0;i<10;i++) nid.push(dataVal.getUint8(i).toString(16).padStart(2,'0'));
-                    document.getElementById('cfgNid').value = nid.join('');
-                    let iid = []; for(let i=0;i<6;i++) iid.push(dataVal.getUint8(10+i).toString(16).padStart(2,'0'));
-                    document.getElementById('cfgIid').value = iid.join('');
-                } else if (ft == 2) {
-                    document.getElementById('cfgUrl').value = new TextDecoder().decode(new Uint8Array(dataVal.buffer, 0, 20)).replace(/\0/g, '');
-                } else if (ft == 4) {
-                    let uid = []; for(let i=0;i<16;i++) uid.push(dataVal.getUint8(i).toString(16).padStart(2,'0'));
-                    document.getElementById('cfgUuid').value = uid.join('');
-                    document.getElementById('cfgMaj').value = dataVal.getUint16(16, false); 
-                    document.getElementById('cfgMin').value = dataVal.getUint16(18, false); 
-                }
+    setState('conn');
+    $('hdrName').textContent = device.name || '';
+    $('hdrSub').textContent = 'Da ket noi';
+    $('btnConnect').disabled = true;
+    $('btnDisconnect').disabled = false;
+    ['cardInfo','cardAuth','cardSlot','cardGlobal'].forEach(id=>$(id).classList.remove('hidden'));
+    log('San sang. Mo khoa bang mat khau de ghi.', 'log-ok');
+  }catch(e){
+    setState('off');
+    log('Loi ket noi: '+e.message, 'log-err');
+  }
+};
 
-                document.getElementById('cfgFrameType').dispatchEvent(new Event('change'));
-                log("Slot read successfully.");
-            } catch(e) { log(e); }
-        };
+$('btnDisconnect').onclick = () => { if(device && device.gatt.connected) device.gatt.disconnect(); };
 
-        document.getElementById('btnWriteSlot').onclick = async () => {
-            try {
-                let baseBuf = new ArrayBuffer(6);
-                let baseView = new DataView(baseBuf);
-                baseView.setUint8(0, parseInt(document.getElementById('cfgEnabled').value));
-                
-                let ft = parseInt(document.getElementById('cfgFrameType').value);
-                baseView.setUint8(1, ft);
-                baseView.setInt8(2, txPowerMap[parseInt(document.getElementById('cfgTxPower').value)]);
-                baseView.setInt8(3, parseInt(document.getElementById('cfgRssi').value));
-                baseView.setUint16(4, parseInt(document.getElementById('cfgInterval').value), true);
-                await charBase.writeValue(baseBuf);
+function onDisconnected(){
+  setState('off'); unlocked=false;
+  $('btnConnect').disabled=false; $('btnDisconnect').disabled=true;
+  $('hdrSub').textContent='Da ngat ket noi';
+  log('Thiet bi ngat ket noi.', 'log-warn');
+}
 
-                let dataBuf = new ArrayBuffer(20);
-                let dataView = new DataView(dataBuf);
-                
-                if (ft == 1) {
-                    let nid = document.getElementById('cfgNid').value.padEnd(20, '0');
-                    for(let i=0;i<10;i++) dataView.setUint8(i, parseInt(nid.substr(i << 1, 2), 16));
-                    let iid = document.getElementById('cfgIid').value.padEnd(12, '0');
-                    for(let i=0;i<6;i++) dataView.setUint8(10+i, parseInt(iid.substr(i << 1, 2), 16));
-                } else if (ft == 2) {
-                    let urlStr = document.getElementById('cfgUrl').value.substring(0, 20);
-                    let urlBytes = new TextEncoder().encode(urlStr);
-                    new Uint8Array(dataBuf).set(urlBytes);
-                } else if (ft == 4) {
-                    let uhex = document.getElementById('cfgUuid').value.padEnd(32, '0');
-                    for(let i=0;i<16;i++) dataView.setUint8(i, parseInt(uhex.substr(i << 1, 2), 16));
-                    dataView.setUint16(16, parseInt(document.getElementById('cfgMaj').value), false);
-                    dataView.setUint16(18, parseInt(document.getElementById('cfgMin').value), false);
-                }
-                await charData.writeValue(dataBuf);
-                log("RAM write complete.");
-            } catch(e) { log(e); }
-        };
+/* ===================================================================== */
+/*  Device Information Service                                           */
+/* ===================================================================== */
+async function readDeviceInfo(){
+  const map = { 0x2a29:'Hang san xuat', 0x2a24:'Model', 0x2a25:'Serial (MAC)',
+                0x2a26:'Firmware', 0x2a27:'Phan cung', 0x2a28:'Phan mem' };
+  let html='';
+  try{
+    const d = await server.getPrimaryService(DIS);
+    for(const [uuid,name] of Object.entries(map)){
+      try{
+        const c = await d.getCharacteristic(parseInt(uuid));
+        const v = await c.readValue();
+        const txt = dec.decode(v);
+        dis[name]=txt;
+        html += `<div class="kv"><span class="k">${name}</span><span class="v">${txt||'—'}</span></div>`;
+      }catch(_){}
+    }
+  }catch(e){ html='<div class="note">Khong doc duoc Device Information.</div>'; }
+  $('devinfo').innerHTML = html || '<div class="note">Khong co du lieu.</div>';
+}
 
-        document.getElementById('btnReboot').onclick = async () => { await charCmd.writeValue(new Uint8Array([1])); log("Saving to Flash & Rebooting..."); };
-        document.getElementById('btnFactory').onclick = async () => { await charCmd.writeValue(new Uint8Array([2])); log("Wiping..."); };
-    </script>
+/* ===================================================================== */
+/*  Auth                                                                 */
+/* ===================================================================== */
+$('btnAuth').onclick = () => gatt(async () => {
+  try{
+    const pw = $('authPw').value;
+    await chars.auth.writeValue(enc.encode(pw));
+    unlocked = true; // firmware khong bao loi sai mk truc tiep; ta gia dinh ok
+    $('authNote').innerHTML = '<span class="log-ok">Da gui mat khau. Neu ghi bi tu choi → mat khau sai.</span>';
+    log('Da gui mat khau mo khoa.', 'log-ok');
+  }catch(e){ log('Loi auth: '+e.message,'log-err'); }
+});
+
+/* ===================================================================== */
+/*  Global                                                               */
+/* ===================================================================== */
+async function readGlobal(){
+  const v = await chars.global.readValue();
+  numSlots = v.getUint8(0) || 2;
+  const pwEnabled = v.byteLength>1 ? v.getUint8(1) : 1;
+  $('gNumSlots').value = numSlots;
+  $('gPwEnabled').checked = pwEnabled===1;
+  if(pwEnabled===0){ unlocked=true; $('authNote').innerHTML='<span class="log-ok">Mat khau dang TAT — khong can mo khoa.</span>'; }
+  log('num_slots='+numSlots+', yeu cau mat khau='+(pwEnabled?'co':'khong'));
+}
+
+$('btnWriteGlobal').onclick = () => gatt(async () => {
+  try{
+    const ns = Math.max(1, Math.min(4, parseInt($('gNumSlots').value)||4));
+    const pwEnabled = $('gPwEnabled').checked ? 1 : 0;
+    const pw = $('gNewPw').value || '';
+    const bytes = [ns, pwEnabled, ...Array.from(enc.encode(pw))];
+    await chars.global.writeValue(new Uint8Array(bytes));
+    numSlots = ns; buildSlotButtons();
+    log('Da ghi toan cuc (RAM): num_slots='+ns+', mat khau '+(pwEnabled?'BAT':'TAT')+(pw?', doi mk':'')+'.', 'log-ok');
+    $('gNewPw').value='';
+  }catch(e){ log('Loi ghi global: '+e.message,'log-err'); }
+});
+
+/* ===================================================================== */
+/*  Slot select + read                                                   */
+/* ===================================================================== */
+async function readAllSlots(){
+  slotMeta=[];
+  for(let i=0;i<numSlots;i++){
+    await chars.slotSel.writeValue(new Uint8Array([i]));
+    const v=await chars.slotCfg.readValue();
+    slotMeta[i]={ enabled:v.getUint8(OFF.enabled)===1, interval:v.getUint16(OFF.interval,true) };
+  }
+  log('Da doc '+numSlots+' slot de kiem tra interval.');
+}
+
+function intervalDup(intervalMs, exceptSlot){
+  for(let i=0;i<numSlots;i++){
+    if(i===exceptSlot) continue;
+    if(slotMeta[i] && slotMeta[i].enabled && slotMeta[i].interval===intervalMs) return i;
+  }
+  return -1;
+}
+
+function buildSlotButtons(){
+  const box=$('slotBtns'); box.innerHTML='';
+  for(let i=0;i<numSlots;i++){
+    const b=document.createElement('button');
+    b.textContent='Slot '+i; b.onclick=()=>selectSlot(i);
+    if(i===selSlot) b.classList.add('active');
+    box.appendChild(b);
+  }
+}
+
+function selectSlot(i){ return gatt(async () => {
+  try{
+    selSlot=i; buildSlotButtons();
+    await chars.slotSel.writeValue(new Uint8Array([i]));
+    const v = await chars.slotCfg.readValue();
+    slotBuf = new Uint8Array(v.buffer.slice(0));
+    parseSlotToForm(v);
+    $('slotRaw').textContent = 'raw ('+slotBuf.length+'B): '+bytesToHex(slotBuf);
+    log('Da doc slot '+i+' ('+slotBuf.length+' byte).');
+  }catch(e){ log('Loi doc slot: '+e.message,'log-err'); }
+});}
+
+$('btnReadSlot').onclick = () => selectSlot(selSlot);
+
+function parseSlotToForm(v){
+  $('fEnabled').checked     = v.getUint8(OFF.enabled)===1;
+  $('fConnectable').checked = v.getUint8(OFF.conn)===1;
+  const frame = v.getUint8(OFF.frame); $('fFrame').value = frame;
+  $('fTx').value       = v.getInt8(OFF.tx);
+  $('fMeasured').value = v.getInt8(OFF.measured);
+  $('fInterval').value = v.getUint16(OFF.interval, true);
+  $('fLabel').value    = cstr(v, OFF.label, LEN.label);
+
+  // iBeacon
+  const u=[]; for(let i=0;i<LEN.uuid;i++) u.push(v.getUint8(OFF.uuid+i));
+  $('fUuid').value  = bytesToHex(u);
+  $('fMajor').value = v.getUint16(OFF.major, true);
+  $('fMinor').value = v.getUint16(OFF.minor, true);
+  // Eddystone-UID
+  const ns=[]; for(let i=0;i<LEN.ns;i++) ns.push(v.getUint8(OFF.ns+i));
+  const inst=[]; for(let i=0;i<LEN.inst;i++) inst.push(v.getUint8(OFF.inst+i));
+  $('fNs').value=bytesToHex(ns); $('fInst').value=bytesToHex(inst);
+  // Eddystone-URL
+  $('fUrl').value = cstr(v, OFF.url, LEN.url);
+  // Custom
+  const cl=v.getUint8(OFF.customLen); const cd=[];
+  for(let i=0;i<Math.min(cl,LEN.customData);i++) cd.push(v.getUint8(OFF.customData+i));
+  $('fCustom').value=bytesToHex(cd);
+
+  showFrameFields(frame);
+}
+
+/* ===================================================================== */
+/*  Frame field toggle                                                   */
+/* ===================================================================== */
+$('fFrame').onchange = () => showFrameFields(parseInt($('fFrame').value));
+function showFrameFields(f){
+  $('ffIbeacon').classList.toggle('hidden', f!==0);
+  $('ffUrl').classList.toggle('hidden', f!==1);
+  $('ffUid').classList.toggle('hidden', f!==2);
+  $('ffCustom').classList.toggle('hidden', f!==3);
+}
+
+/* ===================================================================== */
+/*  Serialize form -> write slot (read-modify-write giu nguyen do dai)   */
+/* ===================================================================== */
+$('btnWriteSlot').onclick = () => gatt(async () => {
+  try{
+    if(!slotBuf){ log('Chua doc slot.','log-warn'); return; }
+
+    // --- Validate interval trung (chi khi slot nay bat) ---
+    const thisEnabled = $('fEnabled').checked;
+    const thisInterval = Math.max(20,Math.min(10000,parseInt($('fInterval').value)||500));
+    if(thisEnabled){
+      const dup = intervalDup(thisInterval, selSlot);
+      if(dup>=0){
+        alert('Interval '+thisInterval+'ms trung voi Slot '+dup+'.\nMoi slot bat phai co interval khac nhau.');
+        log('Tu choi ghi slot '+selSlot+': interval '+thisInterval+'ms trung Slot '+dup+'.', 'log-err');
+        return;
+      }
+    }
+
+    const u8 = new Uint8Array(slotBuf); // copy buffer da doc
+    const dv = new DataView(u8.buffer);
+
+    dv.setUint8(OFF.enabled, $('fEnabled').checked?1:0);
+    dv.setUint8(OFF.conn,    $('fConnectable').checked?1:0);
+    const frame = parseInt($('fFrame').value);
+    dv.setUint8(OFF.frame, frame);
+    dv.setInt8(OFF.tx,       parseInt($('fTx').value));
+    dv.setInt8(OFF.measured, parseInt($('fMeasured').value));
+    dv.setUint16(OFF.interval, Math.max(20,Math.min(10000,parseInt($('fInterval').value)||500)), true);
+    setCstr(u8, OFF.label, LEN.label, $('fLabel').value);
+
+    if(frame===0){ // iBeacon
+      const ub=hexToBytes($('fUuid').value); for(let i=0;i<LEN.uuid;i++) u8[OFF.uuid+i]=ub[i]||0;
+      dv.setUint16(OFF.major, parseInt($('fMajor').value)||0, true);
+      dv.setUint16(OFF.minor, parseInt($('fMinor').value)||0, true);
+    } else if(frame===1){ // Eddystone-URL
+      setCstr(u8, OFF.url, LEN.url, $('fUrl').value);
+    } else if(frame===2){ // Eddystone-UID
+      const nb=hexToBytes($('fNs').value); for(let i=0;i<LEN.ns;i++) u8[OFF.ns+i]=nb[i]||0;
+      const ib=hexToBytes($('fInst').value); for(let i=0;i<LEN.inst;i++) u8[OFF.inst+i]=ib[i]||0;
+    } else if(frame===3){ // Custom
+      const cb=hexToBytes($('fCustom').value).slice(0,LEN.customData);
+      u8[OFF.customLen]=cb.length; for(let i=0;i<LEN.customData;i++) u8[OFF.customData+i]=cb[i]||0;
+    }
+
+    await chars.slotSel.writeValue(new Uint8Array([selSlot])); // dam bao dung slot
+    await chars.slotCfg.writeValue(u8);
+    slotBuf = u8;
+    slotMeta[selSlot] = { enabled: thisEnabled, interval: thisInterval };  // cap nhat cache
+    $('slotRaw').textContent='raw ('+u8.length+'B): '+bytesToHex(u8);
+    log('Da ghi slot '+selSlot+' xuong RAM. Nho “Luu & khoi dong lai” de vao flash.', 'log-ok');
+  }catch(e){ log('Loi ghi slot (mat khau sai? do dai lech?): '+e.message,'log-err'); }
+});
+
+/* ===================================================================== */
+/*  Commands                                                             */
+/* ===================================================================== */
+$('btnSave').onclick = () => gatt(async () => {
+  try{
+    await chars.command.writeValue(new Uint8Array([CMD.SAVE]));
+    log('Da gui lenh Luu & khoi dong lai. Beacon se reboot + ngat.', 'log-ok');
+  }catch(e){ log('Loi save: '+e.message,'log-err'); }
+});
+
+$('btnFactory').onclick = () => {
+  if(!confirm('Factory reset: xoa toan bo cau hinh ve mac dinh roi reboot. Tiep tuc?')) return;
+  gatt(async () => {
+    try{
+      await chars.command.writeValue(new Uint8Array([CMD.FACTORY]));
+      log('Da gui Factory reset. Beacon ve mac dinh + reboot.', 'log-warn');
+    }catch(e){ log('Loi factory: '+e.message,'log-err'); }
+  });
+};
+
+log('Tapama Beacon Console san sang. Bam “Ket noi beacon”.');
+</script>
 </body>
 </html>
