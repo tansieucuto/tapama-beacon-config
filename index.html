@@ -23,8 +23,10 @@
   h1{font-size:17px;margin:0;font-weight:600}
   h1 span{color:var(--muted);font-family:var(--mono);font-size:13px}
   .sub{color:var(--muted);font-size:13px;margin-top:2px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px 17px;margin-top:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px;margin-top:16px}
   .card h2{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:0 0 13px;font-weight:600}
+  h3{font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);margin:18px 0 11px;font-weight:600}
+  h3:first-child{margin-top:2px}
   .row{display:flex;flex-wrap:wrap;gap:13px}
   .field{display:flex;flex-direction:column;gap:5px;min-width:140px;flex:1}
   label{font-size:12px;color:var(--muted)}
@@ -43,18 +45,20 @@
   button.danger:hover:not(:disabled){background:var(--red);color:#fff}
   .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
   .pill{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-  .kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
   .kv:last-child{border-bottom:0}
   .kv .k{color:var(--muted)} .kv .v{font-family:var(--mono);text-align:right}
-  #log{font-family:var(--mono);font-size:12px;background:#08080a;border:1px solid var(--line);border-radius:7px;padding:10px;height:130px;overflow:auto;white-space:pre-wrap;color:var(--muted)}
+  #log{font-family:var(--mono);font-size:12px;background:#08080a;border:1px solid var(--line);border-radius:7px;padding:10px;height:120px;overflow:auto;white-space:pre-wrap;color:var(--muted)}
   .log-ok{color:var(--green)}.log-err{color:var(--red)}.log-warn{color:var(--txt)}
   .hidden{display:none!important}
   .note{font-size:12px;color:var(--muted);margin-top:8px}
   .frame-fields{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-  .slotbtns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-  .slotbtns button{padding:8px 14px}
-  .slotbtns button.active{background:var(--accent);color:#0b0b0d;border-color:var(--accent)}
+  .tabbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+  .tabbar button{padding:8px 16px}
+  .tabbar button.active{background:var(--accent);color:#0b0b0d;border-color:var(--accent)}
+  .panel{padding-top:16px}
   .raw{font-family:var(--mono);font-size:11px;color:var(--muted);word-break:break-all;margin-top:10px}
+  .sep{height:1px;background:var(--line);margin:18px 0}
   code{font-family:var(--mono);color:var(--txt)}
 </style>
 </head>
@@ -76,115 +80,111 @@
       <button id="btnDisconnect" disabled>Disconnect</button>
       <span class="pill" id="connState">offline</span>
     </div>
-    <div class="note">Shows all nearby BLE devices — pick the one named <code>tapama…</code>. iOS does not support Web Bluetooth — use Chrome on Android / Windows / macOS / Linux.</div>
+    <div class="note">Shows all nearby BLE devices — pick the one named <code>tapama…</code>. iOS has no Web Bluetooth — use Chrome on Android / Windows / macOS / Linux.</div>
   </div>
 
-  <div class="card hidden" id="cardInfo">
-    <h2>Device Information</h2>
-    <div id="devinfo"></div>
-  </div>
+  <div class="card hidden" id="cardMain">
+    <div class="tabbar" id="tabbar"></div>
 
-  <div class="card hidden" id="cardAuth">
-    <h2>Unlock</h2>
-    <div class="row">
-      <div class="field"><label>Password</label>
-        <input id="authPw" type="password" placeholder="museum123" value="museum123"/></div>
-      <div class="field" style="flex:0 0 auto;justify-content:flex-end">
-        <button class="primary" id="btnAuth">Unlock</button></div>
-    </div>
-    <div class="note" id="authNote">Default: <code>museum123</code>. You must unlock before writing.</div>
-  </div>
+    <!-- ================= GENERAL TAB ================= -->
+    <div class="panel" id="panelGeneral">
+      <h3>Device Information</h3>
+      <div id="devinfo"></div>
 
-  <div class="card hidden" id="cardSlot">
-    <h2>Slot Configuration</h2>
-    <div class="slotbtns" id="slotBtns"></div>
-
-    <div class="row">
-      <div class="field chk"><input type="checkbox" id="fEnabled"/><label for="fEnabled">Enabled</label></div>
-      <div class="field chk"><input type="checkbox" id="fConnectable"/><label for="fConnectable">Connectable*</label></div>
-      <div class="field"><label>Frame type</label>
-        <select id="fFrame">
-          <option value="0">iBeacon</option>
-          <option value="1">Eddystone-URL</option>
-          <option value="2">Eddystone-UID</option>
-          <option value="3">Custom (raw)</option>
-        </select></div>
-    </div>
-
-    <div class="row" style="margin-top:14px">
-      <div class="field"><label>TX power (dBm)</label>
-        <select id="fTx">
-          <option>-40</option><option>-20</option><option>-16</option><option>-12</option>
-          <option>-8</option><option>-4</option><option>0</option><option>2</option>
-          <option>3</option><option selected>4</option><option>5</option><option>6</option>
-          <option>7</option><option>8</option>
-        </select></div>
-      <div class="field"><label>Measured power (RSSI @1m/0m)</label>
-        <input id="fMeasured" type="number" value="-59" min="-128" max="127"/></div>
-      <div class="field"><label>Interval (ms)</label>
-        <input id="fInterval" type="number" value="500" min="20" max="10000"/></div>
-    </div>
-
-    <div class="row" style="margin-top:14px">
-      <div class="field"><label>Label (internal, not advertised)</label>
-        <input id="fLabel" maxlength="24" placeholder="e.g. Bronze Drum Room"/></div>
-    </div>
-
-    <div class="frame-fields" id="ffIbeacon">
+      <h3>Security</h3>
       <div class="row">
-        <div class="field" style="flex:2"><label>UUID (32 hex)</label>
-          <input id="fUuid" class="mono" maxlength="32" placeholder="8ec76ea3666848da986675be8bc86f4d"/></div>
-        <div class="field"><label>Major</label><input id="fMajor" type="number" min="0" max="65535" value="1"/></div>
-        <div class="field"><label>Minor</label><input id="fMinor" type="number" min="0" max="65535" value="1"/></div>
+        <div class="field"><label>Password</label>
+          <input id="authPw" type="password" placeholder="museum123" value="museum123"/></div>
+        <div class="field" style="flex:0 0 auto;justify-content:flex-end">
+          <button class="primary" id="btnAuth">Unlock</button></div>
       </div>
+      <div class="note" id="authNote">Default: <code>museum123</code>. Unlock before changing anything.</div>
+
+      <div class="row" style="margin-top:14px">
+        <div class="field chk"><input type="checkbox" id="gPwEnabled" checked/><label for="gPwEnabled">Require password</label></div>
+        <div class="field"><label>Change password (blank = keep)</label>
+          <input id="gNewPw" type="text" maxlength="15" placeholder="••••••"/></div>
+        <div class="field"><label>Active slots (incl. system slot 0)</label>
+          <input id="gNumSlots" type="number" min="1" max="4" value="4"/></div>
+        <div class="field" style="flex:0 0 auto;justify-content:flex-end">
+          <button id="btnWriteGlobal">Apply (RAM)</button></div>
+      </div>
+
+      <div class="sep"></div>
+      <div class="btnrow">
+        <button class="primary" id="btnSave">Save &amp; Restart</button>
+        <button class="danger" id="btnFactory">Factory reset</button>
+      </div>
+      <div class="note">Slot 0 is a fixed system beacon (not editable). “Save &amp; Restart” writes flash and reboots — the device will disconnect (expected).</div>
     </div>
 
-    <div class="frame-fields hidden" id="ffUrl">
-      <div class="row"><div class="field"><label>URL</label>
-        <input id="fUrl" maxlength="20" placeholder="https://tapama.vn"/></div></div>
-      <div class="note">Supports http(s):// (www.) prefixes and .com suffix. Keep it short (≤17 chars after encoding).</div>
-    </div>
-
-    <div class="frame-fields hidden" id="ffUid">
+    <!-- ================= SLOT TAB ================= -->
+    <div class="panel hidden" id="panelSlot">
       <div class="row">
-        <div class="field"><label>Namespace (20 hex)</label>
-          <input id="fNs" class="mono" maxlength="20" placeholder="00000000000000000000"/></div>
-        <div class="field"><label>Instance (12 hex)</label>
-          <input id="fInst" class="mono" maxlength="12" placeholder="000000000001"/></div>
+        <div class="field chk"><input type="checkbox" id="fEnabled"/><label for="fEnabled">Enabled</label></div>
+        <div class="field chk"><input type="checkbox" id="fConnectable"/><label for="fConnectable">Connectable</label></div>
+        <div class="field"><label>Frame type</label>
+          <select id="fFrame">
+            <option value="0">iBeacon</option>
+            <option value="1">Eddystone-URL</option>
+            <option value="2">Eddystone-UID</option>
+            <option value="3">Custom (raw)</option>
+          </select></div>
       </div>
-    </div>
 
-    <div class="frame-fields hidden" id="ffCustom">
-      <div class="row"><div class="field"><label>Payload hex (max 24 bytes = 48 hex)</label>
-        <input id="fCustom" class="mono" maxlength="48" placeholder="ff4c0002..."/></div></div>
-      <div class="note">Broadcast as manufacturer-specific data.</div>
-    </div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label>TX power (dBm)</label>
+          <select id="fTx">
+            <option>-40</option><option>-20</option><option>-16</option><option>-12</option>
+            <option>-8</option><option>-4</option><option>0</option><option>2</option>
+            <option>3</option><option selected>4</option><option>5</option><option>6</option>
+            <option>7</option><option>8</option>
+          </select></div>
+        <div class="field"><label>Measured power (RSSI @1m/0m)</label>
+          <input id="fMeasured" type="number" value="-59" min="-128" max="127"/></div>
+        <div class="field"><label>Interval (ms)</label>
+          <input id="fInterval" type="number" value="500" min="20" max="10000"/></div>
+      </div>
 
-    <div class="btnrow" style="margin-top:16px">
-      <button id="btnReadSlot">Read slot</button>
-      <button class="primary" id="btnWriteSlot">Write slot to device (RAM)</button>
-    </div>
-    <div class="raw" id="slotRaw"></div>
-    <div class="note">*Per-slot connectable has no effect in phase-1 firmware (engine stays connectable for config). Writes go to RAM — use “Save &amp; Restart” to persist to flash.</div>
-  </div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label>Label (internal, not advertised)</label>
+          <input id="fLabel" maxlength="24" placeholder="e.g. Bronze Drum Room"/></div>
+      </div>
 
-  <div class="card hidden" id="cardGlobal">
-    <h2>Device Config &amp; Save</h2>
-    <div class="row">
-      <div class="field"><label>Active slots</label>
-        <input id="gNumSlots" type="number" min="1" max="4" value="4"/></div>
-      <div class="field chk" style="align-self:flex-end;padding-bottom:9px">
-        <input type="checkbox" id="gPwEnabled" checked/><label for="gPwEnabled">Require password</label></div>
-      <div class="field"><label>Change password (blank = keep)</label>
-        <input id="gNewPw" type="text" maxlength="15" placeholder="••••••"/></div>
-      <div class="field" style="flex:0 0 auto;justify-content:flex-end">
-        <button id="btnWriteGlobal">Write config (RAM)</button></div>
+      <div class="frame-fields" id="ffIbeacon">
+        <div class="row">
+          <div class="field" style="flex:2"><label>UUID (32 hex)</label>
+            <input id="fUuid" class="mono" maxlength="32" placeholder="8ec76ea3666848da986675be8bc86f4d"/></div>
+          <div class="field"><label>Major</label><input id="fMajor" type="number" min="0" max="65535" value="1"/></div>
+          <div class="field"><label>Minor</label><input id="fMinor" type="number" min="0" max="65535" value="1"/></div>
+        </div>
+      </div>
+      <div class="frame-fields hidden" id="ffUrl">
+        <div class="row"><div class="field"><label>URL</label>
+          <input id="fUrl" maxlength="20" placeholder="https://tapama.vn"/></div></div>
+        <div class="note">Supports http(s):// (www.) prefixes and .com suffix. Keep short (≤17 chars after encoding).</div>
+      </div>
+      <div class="frame-fields hidden" id="ffUid">
+        <div class="row">
+          <div class="field"><label>Namespace (20 hex)</label>
+            <input id="fNs" class="mono" maxlength="20" placeholder="00000000000000000000"/></div>
+          <div class="field"><label>Instance (12 hex)</label>
+            <input id="fInst" class="mono" maxlength="12" placeholder="000000000001"/></div>
+        </div>
+      </div>
+      <div class="frame-fields hidden" id="ffCustom">
+        <div class="row"><div class="field"><label>Payload hex (max 24 bytes = 48 hex)</label>
+          <input id="fCustom" class="mono" maxlength="48" placeholder="ff4c0002..."/></div></div>
+        <div class="note">Broadcast as manufacturer-specific data.</div>
+      </div>
+
+      <div class="btnrow" style="margin-top:16px">
+        <button id="btnReadSlot">Read slot</button>
+        <button class="primary" id="btnWriteSlot">Write slot to device (RAM)</button>
+      </div>
+      <div class="raw" id="slotRaw"></div>
+      <div class="note">“Connectable” off = this slot advertises non-connectable. The config channel stays connectable so you can always reach this console. Writes go to RAM — use General → “Save &amp; Restart” to persist.</div>
     </div>
-    <div class="btnrow" style="margin-top:16px">
-      <button class="primary" id="btnSave">Save &amp; Restart</button>
-      <button class="danger" id="btnFactory">Factory reset</button>
-    </div>
-    <div class="note">“Save &amp; Restart” writes flash then reboots — the beacon will disconnect (expected).</div>
   </div>
 
   <div class="card">
@@ -206,16 +206,14 @@ const C = {
   command: 'a3c86505-8ed3-4bdf-8a39-a01bebede295',
 };
 const DIS = 0x180a;
-
 const OFF = { enabled:0, frame:1, conn:2, tx:3, measured:4, interval:5,
   uuid:7, major:23, minor:25, ns:27, inst:37, url:43, customLen:64, customData:65, label:89 };
 const LEN = { uuid:16, ns:10, inst:6, url:21, customData:24, label:25 };
-const SLOTCFG_SIZE = 114;
 const CMD = { SAVE:0x01, FACTORY:0x02, LOCK:0x03 };
 
 let device=null, server=null, svc=null, chars={}, dis={};
-let numSlots=4, selSlot=0, slotBuf=null, unlocked=false;
-let slotMeta=[];  // {enabled, interval} per slot — for interval-dup check
+let numSlots=4, selSlot=1, slotBuf=null, unlocked=false, curTab='general';
+let slotMeta=[];
 
 const $ = id => document.getElementById(id);
 function log(msg, cls){ const el=$('log'); const t=new Date().toLocaleTimeString();
@@ -234,8 +232,9 @@ function setState(s){ const sig=$('sig'); sig.classList.remove('live','conn');
   if(s==='live') sig.classList.add('live'); if(s==='conn') sig.classList.add('conn');
   $('connState').textContent = s==='conn'?'connected':(s==='live'?'connecting…':'offline'); }
 
+/* ---------------- Connect ---------------- */
 $('btnConnect').onclick = async () => {
-  if(!navigator.bluetooth){ log('This browser has no Web Bluetooth. Use Chrome/Edge.', 'log-err'); return; }
+  if(!navigator.bluetooth){ log('No Web Bluetooth in this browser. Use Chrome/Edge.', 'log-err'); return; }
   try{
     setState('live'); log('Opening device chooser…');
     device = await navigator.bluetooth.requestDevice({
@@ -255,15 +254,16 @@ $('btnConnect').onclick = async () => {
     await readDeviceInfo();
     await readGlobal();
     await readAllSlots();
-    buildSlotButtons();
-    await selectSlot(0);
+    curTab='general';
+    buildTabs();
+    showGeneral();
 
     setState('conn');
     $('hdrName').textContent = device.name || '';
     $('hdrSub').textContent = 'Connected';
     $('btnConnect').disabled = true; $('btnDisconnect').disabled = false;
-    ['cardInfo','cardAuth','cardSlot','cardGlobal'].forEach(id=>$(id).classList.remove('hidden'));
-    log('Ready. Unlock with the password to write.', 'log-ok');
+    $('cardMain').classList.remove('hidden');
+    log('Ready. Unlock to make changes.', 'log-ok');
   }catch(e){ setState('off'); log('Connection error: '+e.message, 'log-err'); }
 };
 
@@ -272,6 +272,23 @@ function onDisconnected(){ setState('off'); unlocked=false;
   $('btnConnect').disabled=false; $('btnDisconnect').disabled=true;
   $('hdrSub').textContent='Disconnected'; log('Device disconnected.', 'log-warn'); }
 
+/* ---------------- Tabs ---------------- */
+function buildTabs(){
+  const bar=$('tabbar'); bar.innerHTML='';
+  const g=document.createElement('button'); g.textContent='General';
+  g.onclick=()=>showGeneral(); if(curTab==='general') g.classList.add('active'); bar.appendChild(g);
+  // Slot 0 is the hidden system beacon — show only slots 1..numSlots-1
+  for(let i=1;i<numSlots;i++){ const b=document.createElement('button');
+    b.textContent='Slot '+i; b.onclick=()=>showSlot(i);
+    if(curTab===i) b.classList.add('active'); bar.appendChild(b); }
+}
+function showGeneral(){ curTab='general'; buildTabs();
+  $('panelGeneral').classList.remove('hidden'); $('panelSlot').classList.add('hidden'); }
+function showSlot(i){ curTab=i; buildTabs();
+  $('panelGeneral').classList.add('hidden'); $('panelSlot').classList.remove('hidden');
+  selectSlot(i); }
+
+/* ---------------- Device Information ---------------- */
 async function readDeviceInfo(){
   const map = { 0x2a29:'Manufacturer', 0x2a24:'Model', 0x2a25:'Serial (MAC)',
                 0x2a26:'Firmware', 0x2a27:'Hardware', 0x2a28:'Software' };
@@ -288,6 +305,7 @@ async function readDeviceInfo(){
   $('devinfo').innerHTML = html || '<div class="note">No data.</div>';
 }
 
+/* ---------------- Auth ---------------- */
 $('btnAuth').onclick = () => gatt(async () => {
   try{ await chars.auth.writeValue(enc.encode($('authPw').value)); unlocked=true;
     $('authNote').innerHTML='<span class="log-ok">Password sent. If a write is rejected → wrong password.</span>';
@@ -295,6 +313,7 @@ $('btnAuth').onclick = () => gatt(async () => {
   }catch(e){ log('Auth error: '+e.message,'log-err'); }
 });
 
+/* ---------------- Global ---------------- */
 async function readGlobal(){
   const v = await chars.global.readValue();
   numSlots = v.getUint8(0) || 4;
@@ -312,12 +331,13 @@ $('btnWriteGlobal').onclick = () => gatt(async () => {
     const pw = $('gNewPw').value || '';
     const bytes = [ns, pwEnabled, ...Array.from(enc.encode(pw))];
     await chars.global.writeValue(new Uint8Array(bytes));
-    numSlots = ns; buildSlotButtons();
+    numSlots = ns; buildTabs();
     log('Wrote config (RAM): num_slots='+ns+', password '+(pwEnabled?'ON':'OFF')+(pw?', changed':'')+'.', 'log-ok');
     $('gNewPw').value='';
   }catch(e){ log('Global write error: '+e.message,'log-err'); }
 });
 
+/* ---------------- Slots ---------------- */
 async function readAllSlots(){
   slotMeta=[];
   for(let i=0;i<numSlots;i++){
@@ -325,7 +345,7 @@ async function readAllSlots(){
     const v=await chars.slotCfg.readValue();
     slotMeta[i]={ enabled:v.getUint8(OFF.enabled)===1, interval:v.getUint16(OFF.interval,true) };
   }
-  log('Read '+numSlots+' slots for interval checks.');
+  log('Read '+numSlots+' slots (incl. slot 0) for interval checks.');
 }
 function intervalDup(intervalMs, exceptSlot){
   for(let i=0;i<numSlots;i++){ if(i===exceptSlot) continue;
@@ -333,15 +353,8 @@ function intervalDup(intervalMs, exceptSlot){
   return -1;
 }
 
-function buildSlotButtons(){
-  const box=$('slotBtns'); box.innerHTML='';
-  for(let i=0;i<numSlots;i++){ const b=document.createElement('button');
-    b.textContent='Slot '+i; b.onclick=()=>selectSlot(i);
-    if(i===selSlot) b.classList.add('active'); box.appendChild(b); }
-}
-
 function selectSlot(i){ return gatt(async () => {
-  try{ selSlot=i; buildSlotButtons();
+  try{ selSlot=i;
     await chars.slotSel.writeValue(new Uint8Array([i]));
     const v=await chars.slotCfg.readValue();
     slotBuf=new Uint8Array(v.buffer.slice(0));
@@ -387,14 +400,6 @@ $('btnWriteSlot').onclick = () => gatt(async () => {
     if(!slotBuf){ log('No slot read yet.','log-warn'); return; }
     const thisEnabled=$('fEnabled').checked;
     const thisInterval=Math.max(20,Math.min(10000,parseInt($('fInterval').value)||500));
-    if(thisEnabled){
-      const dup=intervalDup(thisInterval, selSlot);
-      if(dup>=0){
-        alert('Interval '+thisInterval+'ms conflicts with Slot '+dup+'.\nEach enabled slot must have a unique interval.');
-        log('Write rejected: slot '+selSlot+' interval '+thisInterval+'ms conflicts with Slot '+dup+'.', 'log-err');
-        return;
-      }
-    }
     const u8=new Uint8Array(slotBuf); const dv=new DataView(u8.buffer);
     dv.setUint8(OFF.enabled, thisEnabled?1:0);
     dv.setUint8(OFF.conn, $('fConnectable').checked?1:0);
@@ -419,16 +424,16 @@ $('btnWriteSlot').onclick = () => gatt(async () => {
     await chars.slotCfg.writeValue(u8);
     slotBuf=u8; slotMeta[selSlot]={enabled:thisEnabled, interval:thisInterval};
     $('slotRaw').textContent='raw ('+u8.length+'B): '+bytesToHex(u8);
-    log('Wrote slot '+selSlot+' to RAM. Use “Save & Restart” to persist.', 'log-ok');
+    log('Wrote slot '+selSlot+' to RAM. Use General → Save & Restart to persist.', 'log-ok');
   }catch(e){ log('Slot write error (wrong password? length mismatch?): '+e.message,'log-err'); }
 });
 
+/* ---------------- Commands ---------------- */
 $('btnSave').onclick = () => gatt(async () => {
   try{ await chars.command.writeValue(new Uint8Array([CMD.SAVE]));
     log('Sent Save & Restart. Beacon will reboot + disconnect.', 'log-ok');
   }catch(e){ log('Save error: '+e.message,'log-err'); }
 });
-
 $('btnFactory').onclick = () => {
   if(!confirm('Factory reset: wipe all config to defaults and reboot. Continue?')) return;
   gatt(async () => {
