@@ -1,449 +1,465 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tapama Beacon Console</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tapama Beacon Configurator</title>
 <style>
   :root{
-    --bg:#0b0b0d; --panel:#141417; --panel-2:#1c1c21; --line:#2a2a31;
-    --txt:#e7e7ea; --muted:#8a8a93; --accent:#e7e7ea; --green:#5bbf8a; --red:#c2584c;
-    --mono:'JetBrains Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
-    --sans:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --r:8px;
+    --bg:#0a0a0a; --panel:#141414; --panel2:#1c1c1c; --line:#2b2b2b;
+    --txt:#e9e9e9; --muted:#8c8c8c; --accent:#c8c8c8; --accent2:#ffffff;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:900px;margin:0 auto;padding:24px 20px 80px}
-  header{display:flex;align-items:center;gap:13px;padding:16px 0 20px;border-bottom:1px solid var(--line)}
-  .sig{position:relative;width:30px;height:30px;flex:0 0 30px}
-  .sig .dot{position:absolute;inset:0;margin:auto;width:11px;height:11px;border-radius:50%;background:var(--muted);transition:background .3s}
-  .sig.live .dot{background:var(--txt);animation:pulse 1.8s infinite}
-  .sig.conn .dot{background:var(--green)}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(231,231,234,.4)}70%{box-shadow:0 0 0 11px rgba(231,231,234,0)}100%{box-shadow:0 0 0 0 rgba(231,231,234,0)}}
-  h1{font-size:17px;margin:0;font-weight:600}
-  h1 span{color:var(--muted);font-family:var(--mono);font-size:13px}
-  .sub{color:var(--muted);font-size:13px;margin-top:2px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:17px;margin-top:16px}
-  .card h2{font-size:11px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:0 0 13px;font-weight:600}
-  h3{font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);margin:18px 0 11px;font-weight:600}
-  h3:first-child{margin-top:2px}
-  .row{display:flex;flex-wrap:wrap;gap:13px}
-  .field{display:flex;flex-direction:column;gap:5px;min-width:140px;flex:1}
-  label{font-size:12px;color:var(--muted)}
-  input,select{background:var(--panel-2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:9px 10px;font-size:14px;font-family:var(--sans);width:100%}
-  input.mono{font-family:var(--mono);letter-spacing:.5px}
-  input:focus,select:focus{outline:1px solid var(--muted);border-color:var(--muted)}
-  input:disabled,select:disabled{opacity:.5}
-  .chk{flex-direction:row;align-items:center;gap:8px;min-width:0;flex:0 0 auto}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
+       background:var(--bg);color:var(--txt);line-height:1.5}
+  header{padding:18px 20px;border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:650}
+  .pill{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);
+        color:var(--muted)}
+  .pill.on{background:#2e2e2e;color:#fff}
+  main{max-width:760px;margin:0 auto;padding:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:18px;margin-bottom:16px}
+  .card h2{font-size:14px;margin:0 0 14px;color:#cfcfcf;
+           text-transform:uppercase;letter-spacing:.5px}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+  input,select{width:100%;padding:9px 11px;background:var(--panel2);
+        border:1px solid var(--line);border-radius:8px;color:var(--txt);
+        font-size:14px;font-family:inherit}
+  input:focus,select:focus{outline:none;border-color:#6a6a6a}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:140px}
+  .chk{display:flex;align-items:center;gap:8px;margin-top:12px}
   .chk input{width:auto}
-  button{font-family:var(--sans);font-size:14px;font-weight:600;border-radius:7px;padding:10px 15px;border:1px solid var(--line);background:var(--panel-2);color:var(--txt);cursor:pointer;transition:.15s}
-  button:hover:not(:disabled){border-color:var(--muted)}
+  button{padding:10px 16px;border:none;border-radius:8px;background:var(--accent);
+         color:#0a0a0a;font-weight:600;font-size:14px;cursor:pointer;
+         font-family:inherit}
+  button:hover{background:#fff;color:#0a0a0a}
+  button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
+  button.sec:hover{background:#262626}
+  button.danger{background:var(--panel2);color:#cfcfcf;border:1px solid #3a3a3a}
+  button.danger:hover{background:#262626;color:#fff}
   button:disabled{opacity:.4;cursor:not-allowed}
-  button.primary{background:var(--accent);color:#0b0b0d;border-color:var(--accent)}
-  button.primary:hover:not(:disabled){filter:brightness(.92)}
-  button.danger{border-color:var(--red);color:var(--red)}
-  button.danger:hover:not(:disabled){background:var(--red);color:#fff}
-  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-  .pill{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-  .kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
-  .kv:last-child{border-bottom:0}
-  .kv .k{color:var(--muted)} .kv .v{font-family:var(--mono);text-align:right}
-  #log{font-family:var(--mono);font-size:12px;background:#08080a;border:1px solid var(--line);border-radius:7px;padding:10px;height:120px;overflow:auto;white-space:pre-wrap;color:var(--muted)}
-  .log-ok{color:var(--green)}.log-err{color:var(--red)}.log-warn{color:var(--txt)}
-  .hidden{display:none!important}
-  .note{font-size:12px;color:var(--muted);margin-top:8px}
-  .frame-fields{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-  .tabbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px;padding-bottom:15px;border-bottom:1px solid var(--line)}
-  .tabbar button{padding:8px 16px}
-  .tabbar button.active{background:var(--accent);color:#0b0b0d;border-color:var(--accent)}
-  .panel{padding-top:16px}
-  .raw{font-family:var(--mono);font-size:11px;color:var(--muted);word-break:break-all;margin-top:10px}
-  .sep{height:1px;background:var(--line);margin:18px 0}
-  code{font-family:var(--mono);color:var(--txt)}
+  .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .hidden{display:none}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+  .fixedbadge{display:inline-block;padding:9px 11px;background:#1c1c1c;
+       border:1px solid var(--line);border-radius:8px;color:#cfcfcf;
+       font-family:ui-monospace,monospace;font-size:14px;width:100%}
+  #log{background:#000;border:1px solid var(--line);border-radius:8px;
+       padding:12px;height:150px;overflow:auto;font-family:ui-monospace,monospace;
+       font-size:12px;white-space:pre-wrap;color:#8c8c8c}
+  .log-ok{color:#cfcfcf} .log-err{color:#f2f2f2;font-weight:600} .log-warn{color:#9a9a9a}
+  .slots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .slots button{flex:1;min-width:42px;padding:8px 0}
+  .slots button.active{background:var(--accent);color:#0a0a0a}
+  .slots button:not(.active){background:var(--panel2);color:var(--muted)}
 </style>
 </head>
 <body>
-<div class="wrap">
+<header>
+  <h1>📡 Tapama Beacon Configurator</h1>
+  <span id="status" class="pill">Chưa kết nối</span>
+  <span id="authpill" class="pill hidden">🔒 Đã khóa</span>
+  <div style="margin-left:auto"></div>
+  <button id="btnConnect">Kết nối</button>
+  <button id="btnScanAll" class="sec">Quét tất cả</button>
+  <button id="btnDisconnect" class="sec hidden">Ngắt</button>
+</header>
 
-  <header>
-    <div class="sig" id="sig"><div class="dot"></div></div>
-    <div>
-      <h1>Tapama Beacon Console <span id="hdrName"></span></h1>
-      <div class="sub" id="hdrSub">Not connected · requires Chrome/Edge + HTTPS or localhost</div>
-    </div>
-  </header>
-
-  <div class="card">
-    <h2>Connection</h2>
-    <div class="btnrow">
-      <button class="primary" id="btnConnect">Connect</button>
-      <button id="btnDisconnect" disabled>Disconnect</button>
-      <span class="pill" id="connState">offline</span>
-    </div>
-    <div class="note">Shows all nearby BLE devices — pick the one named <code>tapama…</code>. iOS has no Web Bluetooth — use Chrome on Android / Windows / macOS / Linux.</div>
+<main>
+  <!-- UNLOCK -->
+  <div class="card hidden" id="cardAuth">
+    <h2>Mở khóa</h2>
+    <label>Mật khẩu thiết bị</label>
+    <input id="passInput" type="password" value="0000" autocomplete="off">
+    <div class="hint">Challenge-Response: app đọc nonce, gửi SHA-256(mật khẩu ‖ nonce). Mật khẩu không bao giờ gửi thô.</div>
+    <div class="btnbar"><button id="btnUnlock">🔓 Mở khóa</button></div>
   </div>
 
-  <div class="card hidden" id="cardMain">
-    <div class="tabbar" id="tabbar"></div>
+  <!-- GENERAL -->
+  <div class="card hidden" id="cardGen">
+    <h2>Cấu hình chung</h2>
+    <label>Tên thiết bị (tối đa 29 ký tự)</label>
+    <input id="genName" maxlength="29">
+    <div class="row">
+      <div>
+        <label>Global TX Power</label>
+        <select id="genTx"></select>
+      </div>
+      <div>
+        <label>Đổi mật khẩu (để trống = giữ nguyên)</label>
+        <input id="genPass" type="text" maxlength="32" placeholder="••••">
+      </div>
+    </div>
+    <div class="chk">
+      <input id="genPwReq" type="checkbox">
+      <label style="margin:0">Yêu cầu mật khẩu khi kết nối</label>
+    </div>
+    <div class="btnbar">
+      <button id="btnGenApply">Áp dụng (RAM)</button>
+      <button id="btnSave" class="sec">💾 Lưu Flash</button>
+      <button id="btnReboot" class="sec">↻ Khởi động lại</button>
+      <button id="btnFactory" class="danger">⚠ Factory Reset</button>
+    </div>
+    <div class="hint">“Áp dụng” đổi tên + TX power tức thì nhưng chưa ghi flash. Bấm “Lưu Flash” để giữ qua reboot.</div>
+  </div>
 
-    <!-- ================= GENERAL TAB ================= -->
-    <div class="panel" id="panelGeneral">
-      <h3>Device Information</h3>
-      <div id="devinfo"></div>
+  <!-- SLOTS -->
+  <div class="card hidden" id="cardSlot">
+    <h2>Cấu hình Slot</h2>
+    <div class="slots" id="slotTabs"></div>
+    <div class="row">
+      <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Bật slot</label></div>
+      <div class="chk"><input id="sConn" type="checkbox"><label style="margin:0">Cho kết nối (connectable)</label></div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Chu kỳ phát (ms, 20–10000)</label>
+        <input id="sInt" type="number" min="20" max="10000" value="100">
+      </div>
+      <div>
+        <label>Measured Power @1m (dBm, riêng slot)</label>
+        <input id="sMp" type="number" min="-128" max="20" value="-59">
+      </div>
+    </div>
+    <label>Loại gói (Frame Type)</label>
+    <select id="sFrame">
+      <option value="1">1 — iBeacon (Legacy)</option>
+      <option value="2">2 — Eddystone-URL (Legacy)</option>
+      <option value="3">3 — Eddystone-UID (Legacy)</option>
+      <option value="4">4 — Eddystone-TLM (Legacy, tự sinh)</option>
+      <option value="5">5 — Custom (Extended)</option>
+    </select>
 
-      <h3>Security</h3>
+    <!-- dynamic per-frame -->
+    <div id="fIbeacon" class="frameBox">
+      <label>UUID (32 hex)</label>
+      <input id="ibUuid" class="mono" maxlength="47" value="18ee1516-016b-4bec-ad96-bcb96d166e97">
       <div class="row">
-        <div class="field"><label>Password</label>
-          <input id="authPw" type="password" placeholder="museum123" value="museum123"/></div>
-        <div class="field" style="flex:0 0 auto;justify-content:flex-end">
-          <button class="primary" id="btnAuth">Unlock</button></div>
+        <div><label>Major (0–65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
+        <div><label>Minor (0–65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
       </div>
-      <div class="note" id="authNote">Default: <code>museum123</code>. Unlock before changing anything.</div>
-
-      <div class="row" style="margin-top:14px">
-        <div class="field chk"><input type="checkbox" id="gPwEnabled" checked/><label for="gPwEnabled">Require password</label></div>
-        <div class="field"><label>Change password (blank = keep)</label>
-          <input id="gNewPw" type="text" maxlength="15" placeholder="••••••"/></div>
-        <div class="field"><label>Active slots (incl. system slot 0)</label>
-          <input id="gNumSlots" type="number" min="1" max="4" value="4"/></div>
-        <div class="field" style="flex:0 0 auto;justify-content:flex-end">
-          <button id="btnWriteGlobal">Apply (RAM)</button></div>
-      </div>
-
-      <div class="sep"></div>
-      <div class="btnrow">
-        <button class="primary" id="btnSave">Save &amp; Restart</button>
-        <button class="danger" id="btnFactory">Factory reset</button>
-      </div>
-      <div class="note">Slot 0 is a fixed system beacon (not editable). “Save &amp; Restart” writes flash and reboots — the device will disconnect (expected).</div>
+      <div class="hint">Major/Minor lưu LE, firmware tự đổi sang BE khi lên sóng.</div>
     </div>
 
-    <!-- ================= SLOT TAB ================= -->
-    <div class="panel hidden" id="panelSlot">
+    <div id="fUrl" class="frameBox hidden">
+      <label>URL</label>
+      <input id="urlVal" value="https://www.nordicsemi.com">
+      <div class="hint">Tự mã hóa scheme + hậu tố (.com/.org…) theo chuẩn Eddystone, tối đa 17 byte sau scheme.</div>
+    </div>
+
+    <div id="fUid" class="frameBox hidden">
       <div class="row">
-        <div class="field chk"><input type="checkbox" id="fEnabled"/><label for="fEnabled">Enabled</label></div>
-        <div class="field chk"><input type="checkbox" id="fConnectable"/><label for="fConnectable">Connectable</label></div>
-        <div class="field"><label>Frame type</label>
-          <select id="fFrame">
-            <option value="0">iBeacon</option>
-            <option value="1">Eddystone-URL</option>
-            <option value="2">Eddystone-UID</option>
-            <option value="3">Custom (raw)</option>
-          </select></div>
+        <div><label>Namespace (20 hex / 10 byte)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
+        <div><label>Instance (12 hex / 6 byte)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
       </div>
+    </div>
 
-      <div class="row" style="margin-top:14px">
-        <div class="field"><label>TX power (dBm)</label>
-          <select id="fTx">
-            <option>-40</option><option>-20</option><option>-16</option><option>-12</option>
-            <option>-8</option><option>-4</option><option>0</option><option>2</option>
-            <option>3</option><option selected>4</option><option>5</option><option>6</option>
-            <option>7</option><option>8</option>
-          </select></div>
-        <div class="field"><label>Measured power (RSSI @1m/0m)</label>
-          <input id="fMeasured" type="number" value="-59" min="-128" max="127"/></div>
-        <div class="field"><label>Interval (ms)</label>
-          <input id="fInterval" type="number" value="500" min="20" max="10000"/></div>
-      </div>
+    <div id="fTlm" class="frameBox hidden">
+      <div class="hint">TLM tự sinh: điện áp (SAADC VDD), nhiệt độ die, bộ đếm quảng bá + thời gian. Không có gì để nhập.</div>
+    </div>
 
-      <div class="row" style="margin-top:14px">
-        <div class="field"><label>Label (internal, not advertised)</label>
-          <input id="fLabel" maxlength="24" placeholder="e.g. Bronze Drum Room"/></div>
-      </div>
+    <div id="fCustom" class="frameBox hidden">
+      <label>Manufacturer ID (cố định)</label>
+      <span class="fixedbadge">0x5054 — Tapama</span>
+      <label>Payload (hex, tối đa 29 byte — đứng sau Manufacturer ID)</label>
+      <input id="cData" class="mono" value="010203deadbeef">
+      <div class="hint">Phát dưới dạng Extended PDU, AD type 0xFF (Manufacturer Specific Data), company ID 0x5054 (little-endian 54 50) + payload.</div>
+    </div>
 
-      <div class="frame-fields" id="ffIbeacon">
-        <div class="row">
-          <div class="field" style="flex:2"><label>UUID (32 hex)</label>
-            <input id="fUuid" class="mono" maxlength="32" placeholder="8ec76ea3666848da986675be8bc86f4d"/></div>
-          <div class="field"><label>Major</label><input id="fMajor" type="number" min="0" max="65535" value="1"/></div>
-          <div class="field"><label>Minor</label><input id="fMinor" type="number" min="0" max="65535" value="1"/></div>
-        </div>
-      </div>
-      <div class="frame-fields hidden" id="ffUrl">
-        <div class="row"><div class="field"><label>URL</label>
-          <input id="fUrl" maxlength="20" placeholder="https://tapama.vn"/></div></div>
-        <div class="note">Supports http(s):// (www.) prefixes and .com suffix. Keep short (≤17 chars after encoding).</div>
-      </div>
-      <div class="frame-fields hidden" id="ffUid">
-        <div class="row">
-          <div class="field"><label>Namespace (20 hex)</label>
-            <input id="fNs" class="mono" maxlength="20" placeholder="00000000000000000000"/></div>
-          <div class="field"><label>Instance (12 hex)</label>
-            <input id="fInst" class="mono" maxlength="12" placeholder="000000000001"/></div>
-        </div>
-      </div>
-      <div class="frame-fields hidden" id="ffCustom">
-        <div class="row"><div class="field"><label>Payload hex (max 24 bytes = 48 hex)</label>
-          <input id="fCustom" class="mono" maxlength="48" placeholder="ff4c0002..."/></div></div>
-        <div class="note">Broadcast as manufacturer-specific data.</div>
-      </div>
-
-      <div class="btnrow" style="margin-top:16px">
-        <button id="btnReadSlot">Read slot</button>
-        <button class="primary" id="btnWriteSlot">Write slot to device (RAM)</button>
-      </div>
-      <div class="raw" id="slotRaw"></div>
-      <div class="note">“Connectable” off = this slot advertises non-connectable. The config channel stays connectable so you can always reach this console. Writes go to RAM — use General → “Save &amp; Restart” to persist.</div>
+    <div class="btnbar">
+      <button id="btnReadSlot" class="sec">⭯ Đọc lại slot</button>
+      <button id="btnWriteSlot">✍ Ghi slot</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>Log</h2>
+    <h2>Nhật ký</h2>
     <div id="log"></div>
   </div>
-
-</div>
+</main>
 
 <script>
-"use strict";
+// ============ UUIDs (khớp gatt_svc.c) ============
+const SVC  = 'e7a10000-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_AUTH='e7a10001-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_GEN ='e7a10002-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_SEL ='e7a10003-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 
-const SVC = 'a3c86500-8ed3-4bdf-8a39-a01bebede295';
-const C = {
-  auth:    'a3c86501-8ed3-4bdf-8a39-a01bebede295',
-  global:  'a3c86502-8ed3-4bdf-8a39-a01bebede295',
-  slotSel: 'a3c86503-8ed3-4bdf-8a39-a01bebede295',
-  slotCfg: 'a3c86504-8ed3-4bdf-8a39-a01bebede295',
-  command: 'a3c86505-8ed3-4bdf-8a39-a01bebede295',
-};
-const DIS = 0x180a;
-const OFF = { enabled:0, frame:1, conn:2, tx:3, measured:4, interval:5,
-  uuid:7, major:23, minor:25, ns:27, inst:37, url:43, customLen:64, customData:65, label:89 };
-const LEN = { uuid:16, ns:10, inst:6, url:21, customData:24, label:25 };
-const CMD = { SAVE:0x01, FACTORY:0x02, LOCK:0x03 };
+const TX_LEVELS = [8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 
-let device=null, server=null, svc=null, chars={}, dis={};
-let numSlots=4, selSlot=1, slotBuf=null, unlocked=false, curTab='general';
-let slotMeta=[];
+let device, server, chars = {}, curSlot = 1;
 
+// ============ helpers ============
 const $ = id => document.getElementById(id);
-function log(msg, cls){ const el=$('log'); const t=new Date().toLocaleTimeString();
-  el.innerHTML += `<div class="${cls||''}">[${t}] ${msg}</div>`; el.scrollTop=el.scrollHeight; }
-const enc=new TextEncoder(), dec=new TextDecoder();
-function hexToBytes(h){ h=(h||'').replace(/[^0-9a-fA-F]/g,''); const o=[];
-  for(let i=0;i+1<h.length;i+=2) o.push(parseInt(h.substr(i,2),16)); return o; }
-function bytesToHex(a){ return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join(''); }
-function cstr(v,off,max){ let s=''; for(let i=0;i<max;i++){const c=v.getUint8(off+i); if(c===0)break; s+=String.fromCharCode(c);} return s; }
-function setCstr(u8,off,max,str){ for(let i=0;i<max;i++) u8[off+i]=0; const b=enc.encode(str||''); for(let i=0;i<Math.min(b.length,max-1);i++) u8[off+i]=b[i]; }
-
-let gattQ = Promise.resolve();
-function gatt(fn){ gattQ = gattQ.then(fn, fn); return gattQ; }
-
-function setState(s){ const sig=$('sig'); sig.classList.remove('live','conn');
-  if(s==='live') sig.classList.add('live'); if(s==='conn') sig.classList.add('conn');
-  $('connState').textContent = s==='conn'?'connected':(s==='live'?'connecting…':'offline'); }
-
-/* ---------------- Connect ---------------- */
-$('btnConnect').onclick = async () => {
-  if(!navigator.bluetooth){ log('No Web Bluetooth in this browser. Use Chrome/Edge.', 'log-err'); return; }
-  try{
-    setState('live'); log('Opening device chooser…');
-    device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices:[ SVC, DIS ]
-    });
-    device.addEventListener('gattserverdisconnected', onDisconnected);
-    log('Connecting GATT…');
-    server = await device.gatt.connect();
-    svc = await server.getPrimaryService(SVC);
-    chars.auth    = await svc.getCharacteristic(C.auth);
-    chars.global  = await svc.getCharacteristic(C.global);
-    chars.slotSel = await svc.getCharacteristic(C.slotSel);
-    chars.slotCfg = await svc.getCharacteristic(C.slotCfg);
-    chars.command = await svc.getCharacteristic(C.command);
-
-    await readDeviceInfo();
-    await readGlobal();
-    await readAllSlots();
-    curTab='general';
-    buildTabs();
-    showGeneral();
-
-    setState('conn');
-    $('hdrName').textContent = device.name || '';
-    $('hdrSub').textContent = 'Connected';
-    $('btnConnect').disabled = true; $('btnDisconnect').disabled = false;
-    $('cardMain').classList.remove('hidden');
-    log('Ready. Unlock to make changes.', 'log-ok');
-  }catch(e){ setState('off'); log('Connection error: '+e.message, 'log-err'); }
-};
-
-$('btnDisconnect').onclick = () => { if(device && device.gatt.connected) device.gatt.disconnect(); };
-function onDisconnected(){ setState('off'); unlocked=false;
-  $('btnConnect').disabled=false; $('btnDisconnect').disabled=true;
-  $('hdrSub').textContent='Disconnected'; log('Device disconnected.', 'log-warn'); }
-
-/* ---------------- Tabs ---------------- */
-function buildTabs(){
-  const bar=$('tabbar'); bar.innerHTML='';
-  const g=document.createElement('button'); g.textContent='General';
-  g.onclick=()=>showGeneral(); if(curTab==='general') g.classList.add('active'); bar.appendChild(g);
-  // Slot 0 is the hidden system beacon — show only slots 1..numSlots-1
-  for(let i=1;i<numSlots;i++){ const b=document.createElement('button');
-    b.textContent='Slot '+i; b.onclick=()=>showSlot(i);
-    if(curTab===i) b.classList.add('active'); bar.appendChild(b); }
+function log(msg, cls){
+  const el = $('log'); const t = new Date().toLocaleTimeString();
+  el.innerHTML += `<span class="${cls||''}">[${t}] ${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
 }
-function showGeneral(){ curTab='general'; buildTabs();
-  $('panelGeneral').classList.remove('hidden'); $('panelSlot').classList.add('hidden'); }
-function showSlot(i){ curTab=i; buildTabs();
-  $('panelGeneral').classList.add('hidden'); $('panelSlot').classList.remove('hidden');
-  selectSlot(i); }
+const s8  = v => v > 127 ? v - 256 : v;          // byte -> signed
+const u8  = v => v & 0xff;                        // signed -> byte
+function hexToBytes(h){
+  h = h.replace(/[^0-9a-fA-F]/g,'');
+  const a = new Uint8Array(h.length/2|0);
+  for(let i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16);
+  return a;
+}
+const bytesToHex = a => Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
 
-/* ---------------- Device Information ---------------- */
-async function readDeviceInfo(){
-  const map = { 0x2a29:'Manufacturer', 0x2a24:'Model', 0x2a25:'Serial (MAC)',
-                0x2a26:'Firmware', 0x2a27:'Hardware', 0x2a28:'Software' };
-  let html='';
-  try{
-    const d = await server.getPrimaryService(DIS);
-    for(const [uuid,name] of Object.entries(map)){
-      try{ const c=await d.getCharacteristic(parseInt(uuid)); const v=await c.readValue();
-        const txt=dec.decode(v); dis[name]=txt;
-        html += `<div class="kv"><span class="k">${name}</span><span class="v">${txt||'—'}</span></div>`;
-      }catch(_){}
+async function writeChar(c, data){
+  if(c.writeValueWithResponse) return c.writeValueWithResponse(data);
+  return c.writeValue(data);
+}
+
+// ============ Eddystone URL codec ============
+const URL_SCHEMES=['http://www.','https://www.','http://','https://'];
+const URL_SUFFIX=['.com/','.org/','.edu/','.net/','.info/','.biz/','.gov/',
+                  '.com','.org','.edu','.net','.info','.biz','.gov'];
+function encodeUrl(url){
+  let scheme=-1;
+  for(let i=0;i<URL_SCHEMES.length;i++) if(url.startsWith(URL_SCHEMES[i])){scheme=i;break;}
+  if(scheme<0) throw new Error('URL phải bắt đầu bằng http:// hoặc https://');
+  let rest=url.slice(URL_SCHEMES[scheme].length);
+  const out=[];
+  while(rest.length){
+    let matched=false;
+    for(let i=0;i<URL_SUFFIX.length;i++){
+      if(rest.startsWith(URL_SUFFIX[i])){out.push(i);rest=rest.slice(URL_SUFFIX[i].length);matched=true;break;}
     }
-  }catch(e){ html='<div class="note">Could not read Device Information.</div>'; }
-  $('devinfo').innerHTML = html || '<div class="note">No data.</div>';
-}
-
-/* ---------------- Auth ---------------- */
-$('btnAuth').onclick = () => gatt(async () => {
-  try{ await chars.auth.writeValue(enc.encode($('authPw').value)); unlocked=true;
-    $('authNote').innerHTML='<span class="log-ok">Password sent. If a write is rejected → wrong password.</span>';
-    log('Unlock password sent.', 'log-ok');
-  }catch(e){ log('Auth error: '+e.message,'log-err'); }
-});
-
-/* ---------------- Global ---------------- */
-async function readGlobal(){
-  const v = await chars.global.readValue();
-  numSlots = v.getUint8(0) || 4;
-  const pwEnabled = v.byteLength>1 ? v.getUint8(1) : 1;
-  $('gNumSlots').value = numSlots;
-  $('gPwEnabled').checked = pwEnabled===1;
-  if(pwEnabled===0){ unlocked=true; $('authNote').innerHTML='<span class="log-ok">Password is OFF — no unlock needed.</span>'; }
-  log('num_slots='+numSlots+', require_password='+(pwEnabled?'yes':'no'));
-}
-
-$('btnWriteGlobal').onclick = () => gatt(async () => {
-  try{
-    const ns = Math.max(1, Math.min(4, parseInt($('gNumSlots').value)||4));
-    const pwEnabled = $('gPwEnabled').checked ? 1 : 0;
-    const pw = $('gNewPw').value || '';
-    const bytes = [ns, pwEnabled, ...Array.from(enc.encode(pw))];
-    await chars.global.writeValue(new Uint8Array(bytes));
-    numSlots = ns; buildTabs();
-    log('Wrote config (RAM): num_slots='+ns+', password '+(pwEnabled?'ON':'OFF')+(pw?', changed':'')+'.', 'log-ok');
-    $('gNewPw').value='';
-  }catch(e){ log('Global write error: '+e.message,'log-err'); }
-});
-
-/* ---------------- Slots ---------------- */
-async function readAllSlots(){
-  slotMeta=[];
-  for(let i=0;i<numSlots;i++){
-    await chars.slotSel.writeValue(new Uint8Array([i]));
-    const v=await chars.slotCfg.readValue();
-    slotMeta[i]={ enabled:v.getUint8(OFF.enabled)===1, interval:v.getUint16(OFF.interval,true) };
+    if(!matched){out.push(rest.charCodeAt(0));rest=rest.slice(1);}
   }
-  log('Read '+numSlots+' slots (incl. slot 0) for interval checks.');
+  if(out.length>17) throw new Error('URL quá dài (>17 byte sau mã hóa)');
+  return {scheme, bytes:Uint8Array.from(out)};
 }
-function intervalDup(intervalMs, exceptSlot){
-  for(let i=0;i<numSlots;i++){ if(i===exceptSlot) continue;
-    if(slotMeta[i] && slotMeta[i].enabled && slotMeta[i].interval===intervalMs) return i; }
-  return -1;
-}
-
-function selectSlot(i){ return gatt(async () => {
-  try{ selSlot=i;
-    await chars.slotSel.writeValue(new Uint8Array([i]));
-    const v=await chars.slotCfg.readValue();
-    slotBuf=new Uint8Array(v.buffer.slice(0));
-    parseSlotToForm(v);
-    $('slotRaw').textContent='raw ('+slotBuf.length+'B): '+bytesToHex(slotBuf);
-    log('Read slot '+i+' ('+slotBuf.length+' bytes).');
-  }catch(e){ log('Slot read error: '+e.message,'log-err'); }
-});}
-$('btnReadSlot').onclick = () => selectSlot(selSlot);
-
-function parseSlotToForm(v){
-  $('fEnabled').checked=v.getUint8(OFF.enabled)===1;
-  $('fConnectable').checked=v.getUint8(OFF.conn)===1;
-  const frame=v.getUint8(OFF.frame); $('fFrame').value=frame;
-  $('fTx').value=v.getInt8(OFF.tx);
-  $('fMeasured').value=v.getInt8(OFF.measured);
-  $('fInterval').value=v.getUint16(OFF.interval,true);
-  $('fLabel').value=cstr(v,OFF.label,LEN.label);
-  const u=[]; for(let i=0;i<LEN.uuid;i++) u.push(v.getUint8(OFF.uuid+i));
-  $('fUuid').value=bytesToHex(u);
-  $('fMajor').value=v.getUint16(OFF.major,true);
-  $('fMinor').value=v.getUint16(OFF.minor,true);
-  const ns=[]; for(let i=0;i<LEN.ns;i++) ns.push(v.getUint8(OFF.ns+i));
-  const inst=[]; for(let i=0;i<LEN.inst;i++) inst.push(v.getUint8(OFF.inst+i));
-  $('fNs').value=bytesToHex(ns); $('fInst').value=bytesToHex(inst);
-  $('fUrl').value=cstr(v,OFF.url,LEN.url);
-  const cl=v.getUint8(OFF.customLen); const cd=[];
-  for(let i=0;i<Math.min(cl,LEN.customData);i++) cd.push(v.getUint8(OFF.customData+i));
-  $('fCustom').value=bytesToHex(cd);
-  showFrameFields(frame);
+function decodeUrl(scheme, bytes){
+  let s = URL_SCHEMES[scheme]||'';
+  for(const b of bytes){ s += (b<URL_SUFFIX.length)?URL_SUFFIX[b]:String.fromCharCode(b); }
+  return s;
 }
 
-$('fFrame').onchange = () => showFrameFields(parseInt($('fFrame').value));
-function showFrameFields(f){
-  $('ffIbeacon').classList.toggle('hidden', f!==0);
-  $('ffUrl').classList.toggle('hidden', f!==1);
-  $('ffUid').classList.toggle('hidden', f!==2);
-  $('ffCustom').classList.toggle('hidden', f!==3);
+// ============ connect ============
+async function finishConnect(){
+  device.addEventListener('gattserverdisconnected', onDisc);
+  log('Đang kết nối GATT…');
+  server = await device.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  chars.auth = await svc.getCharacteristic(C_AUTH);
+  chars.gen  = await svc.getCharacteristic(C_GEN);
+  chars.sel  = await svc.getCharacteristic(C_SEL);
+  chars.slot = await svc.getCharacteristic(C_SLOT);
+  chars.cmd  = await svc.getCharacteristic(C_CMD);
+  $('status').textContent = device.name||'Đã kết nối';
+  $('status').classList.add('on');
+  $('btnConnect').classList.add('hidden');
+  $('btnScanAll').classList.add('hidden');
+  $('btnDisconnect').classList.remove('hidden');
+  $('cardAuth').classList.remove('hidden');
+  $('authpill').classList.remove('hidden');
+  log('Đã kết nối ✔ — hãy mở khóa', 'log-ok');
 }
 
-$('btnWriteSlot').onclick = () => gatt(async () => {
+$('btnConnect').onclick = async () => {
   try{
-    if(!slotBuf){ log('No slot read yet.','log-warn'); return; }
-    const thisEnabled=$('fEnabled').checked;
-    const thisInterval=Math.max(20,Math.min(10000,parseInt($('fInterval').value)||500));
-    const u8=new Uint8Array(slotBuf); const dv=new DataView(u8.buffer);
-    dv.setUint8(OFF.enabled, thisEnabled?1:0);
-    dv.setUint8(OFF.conn, $('fConnectable').checked?1:0);
-    const frame=parseInt($('fFrame').value); dv.setUint8(OFF.frame, frame);
-    dv.setInt8(OFF.tx, parseInt($('fTx').value));
-    dv.setInt8(OFF.measured, parseInt($('fMeasured').value));
-    dv.setUint16(OFF.interval, thisInterval, true);
-    setCstr(u8, OFF.label, LEN.label, $('fLabel').value);
-    if(frame===0){
-      const ub=hexToBytes($('fUuid').value); for(let i=0;i<LEN.uuid;i++) u8[OFF.uuid+i]=ub[i]||0;
-      dv.setUint16(OFF.major, parseInt($('fMajor').value)||0, true);
-      dv.setUint16(OFF.minor, parseInt($('fMinor').value)||0, true);
-    } else if(frame===1){ setCstr(u8, OFF.url, LEN.url, $('fUrl').value); }
-    else if(frame===2){
-      const nb=hexToBytes($('fNs').value); for(let i=0;i<LEN.ns;i++) u8[OFF.ns+i]=nb[i]||0;
-      const ib=hexToBytes($('fInst').value); for(let i=0;i<LEN.inst;i++) u8[OFF.inst+i]=ib[i]||0;
-    } else if(frame===3){
-      const cb=hexToBytes($('fCustom').value).slice(0,LEN.customData);
-      u8[OFF.customLen]=cb.length; for(let i=0;i<LEN.customData;i++) u8[OFF.customData+i]=cb[i]||0;
-    }
-    await chars.slotSel.writeValue(new Uint8Array([selSlot]));
-    await chars.slotCfg.writeValue(u8);
-    slotBuf=u8; slotMeta[selSlot]={enabled:thisEnabled, interval:thisInterval};
-    $('slotRaw').textContent='raw ('+u8.length+'B): '+bytesToHex(u8);
-    log('Wrote slot '+selSlot+' to RAM. Use General → Save & Restart to persist.', 'log-ok');
-  }catch(e){ log('Slot write error (wrong password? length mismatch?): '+e.message,'log-err'); }
-});
-
-/* ---------------- Commands ---------------- */
-$('btnSave').onclick = () => gatt(async () => {
-  try{ await chars.command.writeValue(new Uint8Array([CMD.SAVE]));
-    log('Sent Save & Restart. Beacon will reboot + disconnect.', 'log-ok');
-  }catch(e){ log('Save error: '+e.message,'log-err'); }
-});
-$('btnFactory').onclick = () => {
-  if(!confirm('Factory reset: wipe all config to defaults and reboot. Continue?')) return;
-  gatt(async () => {
-    try{ await chars.command.writeValue(new Uint8Array([CMD.FACTORY]));
-      log('Sent Factory reset. Beacon resets to defaults + reboots.', 'log-warn');
-    }catch(e){ log('Factory error: '+e.message,'log-err'); }
-  });
+    log('Đang quét thiết bị Tapama (lọc theo tên + service)…');
+    device = await navigator.bluetooth.requestDevice({
+      filters:[{namePrefix:'Tapama'},{services:[SVC]}],
+      optionalServices:[SVC]
+    });
+    await finishConnect();
+  }catch(e){ log('Lỗi kết nối: '+e.message,'log-err'); }
 };
 
-log('Tapama Beacon Console ready. Click “Connect”.');
+$('btnScanAll').onclick = async () => {
+  try{
+    log('Quét TẤT CẢ thiết bị — chọn "Tapama" trong danh sách…');
+    device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[SVC]
+    });
+    await finishConnect();
+  }catch(e){
+    if(e.name==='NotFoundError' && /service/i.test(e.message))
+      log('Thiết bị bạn chọn không có service Tapama. Chọn đúng "Tapama".','log-err');
+    else log('Lỗi kết nối: '+e.message,'log-err');
+  }
+};
+
+function onDisc(){
+  log('Thiết bị đã ngắt kết nối','log-warn');
+  $('status').textContent='Chưa kết nối'; $('status').classList.remove('on');
+  $('btnConnect').classList.remove('hidden');
+  $('btnScanAll').classList.remove('hidden');
+  ['btnDisconnect','cardAuth','cardGen','cardSlot','authpill']
+    .forEach(id=>$(id).classList.add('hidden'));
+}
+$('btnDisconnect').onclick = () => { if(device&&device.gatt.connected) device.gatt.disconnect(); };
+
+// ============ unlock (challenge-response) ============
+$('btnUnlock').onclick = async () => {
+  try{
+    log('Đọc nonce (challenge)…');
+    const nonceDv = await chars.auth.readValue();
+    const nonce = new Uint8Array(nonceDv.buffer);
+    log('nonce = '+bytesToHex(nonce));
+    const pass = new TextEncoder().encode($('passInput').value);
+    const combined = new Uint8Array(pass.length + nonce.length);
+    combined.set(pass,0); combined.set(nonce,pass.length);
+    const hashBuf = await crypto.subtle.digest('SHA-256', combined);
+    log('Gửi response SHA-256…');
+    await writeChar(chars.auth, new Uint8Array(hashBuf));
+    log('Mở khóa thành công 🔓','log-ok');
+    $('authpill').textContent='🔓 Đã mở khóa'; $('authpill').classList.add('on');
+    $('cardGen').classList.remove('hidden');
+    $('cardSlot').classList.remove('hidden');
+    await readGeneral();
+    buildSlotTabs(); await selectSlot(1);
+  }catch(e){
+    log('Mở khóa thất bại (sai mật khẩu?): '+e.message,'log-err');
+  }
+};
+
+// ============ general config ============
+function buildTxOptions(){
+  const sel=$('genTx'); sel.innerHTML='';
+  TX_LEVELS.forEach(v=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=v+' dBm'; sel.appendChild(o);
+  });
+}
+async function readGeneral(){
+  const dv = await chars.gen.readValue();
+  const b = new Uint8Array(dv.buffer);
+  const pwReq=b[0], tx=s8(b[1]), nlen=b[2];
+  const name=new TextDecoder().decode(b.slice(3,3+nlen));
+  $('genName').value=name; $('genTx').value=tx; $('genPwReq').checked=!!pwReq;
+  $('genPass').value='';
+  log(`Đọc cấu hình chung: name="${name}", tx=${tx}dBm, pwReq=${pwReq}`);
+}
+function buildGenWrite(){
+  const name=new TextEncoder().encode($('genName').value.slice(0,29));
+  const pass=new TextEncoder().encode($('genPass').value.slice(0,32));
+  const buf=[]; buf.push($('genPwReq').checked?1:0);
+  buf.push(u8(parseInt($('genTx').value,10)));
+  buf.push(name.length); name.forEach(x=>buf.push(x));
+  buf.push(pass.length); pass.forEach(x=>buf.push(x)); // pass_len=0 => giữ nguyên
+  return Uint8Array.from(buf);
+}
+$('btnGenApply').onclick = async () => {
+  try{ await writeChar(chars.gen, buildGenWrite());
+    log('Đã áp dụng cấu hình chung ✔','log-ok'); $('genPass').value=''; await readGeneral();
+  }catch(e){ log('Lỗi ghi cấu hình chung: '+e.message,'log-err'); }
+};
+$('btnSave').onclick    = () => sendCmd(0x01,'Lưu flash');
+$('btnReboot').onclick  = () => sendCmd(0x02,'Khởi động lại');
+$('btnFactory').onclick = () => { if(confirm('Xóa toàn bộ cấu hình về mặc định?')) sendCmd(0x03,'Factory reset'); };
+async function sendCmd(code,name){
+  try{ await writeChar(chars.cmd, Uint8Array.of(code));
+    log(name+' — đã gửi lệnh ✔','log-ok');
+  }catch(e){ log('Lỗi lệnh '+name+': '+e.message,'log-err'); }
+}
+
+// ============ slots ============
+function buildSlotTabs(){
+  const t=$('slotTabs'); t.innerHTML='';
+  for(let i=1;i<=6;i++){
+    const b=document.createElement('button'); b.textContent=i;
+    b.onclick=()=>selectSlot(i); t.appendChild(b);
+  }
+}
+function markTab(){ document.querySelectorAll('#slotTabs button')
+  .forEach((b,i)=>b.classList.toggle('active', i+1===curSlot)); }
+
+function showFrame(ft){
+  ['fIbeacon','fUrl','fUid','fTlm','fCustom'].forEach(x=>$(x).classList.add('hidden'));
+  ({1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom'})[ft] &&
+    $({1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom'}[ft]).classList.remove('hidden');
+}
+$('sFrame').onchange = () => showFrame(parseInt($('sFrame').value,10));
+
+async function selectSlot(n){
+  curSlot=n; markTab();
+  try{ await writeChar(chars.sel, Uint8Array.of(n)); await readSlot(); }
+  catch(e){ log('Lỗi chọn slot: '+e.message,'log-err'); }
+}
+$('btnReadSlot').onclick = readSlot;
+
+async function readSlot(){
+  await writeChar(chars.sel, Uint8Array.of(curSlot));
+  const dv = await chars.slot.readValue();
+  const b = new Uint8Array(dv.buffer);
+  $('sEn').checked=!!b[0]; $('sConn').checked=!!b[1];
+  $('sInt').value = b[2] | (b[3]<<8);
+  $('sMp').value  = s8(b[4]);
+  const ft=b[5]; $('sFrame').value=ft; showFrame(ft);
+  const u=b.slice(6); // 31-byte union
+  if(ft===1){
+    $('ibUuid').value = formatUuid(bytesToHex(u.slice(0,16)));
+    $('ibMajor').value = u[16] | (u[17]<<8);
+    $('ibMinor').value = u[18] | (u[19]<<8);
+  }else if(ft===2){
+    $('urlVal').value = decodeUrl(u[0], u.slice(2,2+u[1]));
+  }else if(ft===3){
+    $('uidNs').value = bytesToHex(u.slice(0,10));
+    $('uidInst').value = bytesToHex(u.slice(10,16));
+  }else if(ft===5){
+    $('cData').value = bytesToHex(u.slice(2,2+u[1]));
+  }
+  log(`Slot ${curSlot}: enabled=${b[0]}, conn=${b[1]}, frame=${ft}, int=${b[2]|(b[3]<<8)}ms`);
+}
+
+const formatUuid = h => h.length===32 ?
+  `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}` : h;
+
+function buildSlotWrite(){
+  const buf=new Uint8Array(37);
+  buf[0]=$('sEn').checked?1:0;
+  buf[1]=$('sConn').checked?1:0;
+  const intMs=Math.max(20,Math.min(10000,parseInt($('sInt').value,10)||100));
+  buf[2]=intMs&0xff; buf[3]=(intMs>>8)&0xff;
+  buf[4]=u8(parseInt($('sMp').value,10)||0);
+  const ft=parseInt($('sFrame').value,10); buf[5]=ft;
+  let u=new Uint8Array(31);
+  if(ft===1){
+    const uuid=hexToBytes($('ibUuid').value);
+    if(uuid.length!==16) throw new Error('UUID phải đúng 16 byte (32 hex)');
+    u.set(uuid,0);
+    const maj=parseInt($('ibMajor').value,10)||0, min=parseInt($('ibMinor').value,10)||0;
+    u[16]=maj&0xff; u[17]=(maj>>8)&0xff; u[18]=min&0xff; u[19]=(min>>8)&0xff;
+  }else if(ft===2){
+    const {scheme,bytes}=encodeUrl($('urlVal').value.trim());
+    u[0]=scheme; u[1]=bytes.length; u.set(bytes,2);
+  }else if(ft===3){
+    const ns=hexToBytes($('uidNs').value), inst=hexToBytes($('uidInst').value);
+    if(ns.length!==10) throw new Error('Namespace phải 10 byte (20 hex)');
+    if(inst.length!==6) throw new Error('Instance phải 6 byte (12 hex)');
+    u.set(ns,0); u.set(inst,10);
+  }else if(ft===5){
+    const data=hexToBytes($('cData').value);
+    if(data.length>29) throw new Error('Payload tối đa 29 byte');
+    u[0]=0xff; u[1]=data.length; u.set(data,2); // u[0] reserved; firmware ép 0xFF + company 0x5054
+  }
+  buf.set(u,6);
+  return buf;
+}
+$('btnWriteSlot').onclick = async () => {
+  try{
+    const data=buildSlotWrite();
+    await writeChar(chars.slot, data);
+    log(`Ghi slot ${curSlot} thành công ✔ (${bytesToHex(data)})`,'log-ok');
+  }catch(e){ log('Lỗi ghi slot: '+e.message,'log-err'); }
+};
+
+// ============ init ============
+if(!navigator.bluetooth){
+  log('Trình duyệt không hỗ trợ Web Bluetooth. Dùng Chrome/Edge trên desktop hoặc Android.','log-err');
+}
+buildTxOptions();
+log('Sẵn sàng. Bấm “Kết nối”.');
 </script>
 </body>
 </html>
