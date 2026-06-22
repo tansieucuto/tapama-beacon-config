@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -61,76 +61,72 @@
 <body>
 <header>
   <h1>📡 Tapama Beacon Configurator</h1>
-  <span id="status" class="pill">Chưa kết nối</span>
-  <span id="authpill" class="pill hidden">🔒 Đã khóa</span>
+  <span id="status" class="pill">Not connected</span>
+  <span id="authpill" class="pill hidden">🔒 Locked</span>
   <div style="margin-left:auto"></div>
-  <button id="btnConnect">Kết nối</button>
-  <button id="btnScanAll" class="sec">Quét tất cả</button>
-  <button id="btnDisconnect" class="sec hidden">Ngắt</button>
+  <button id="btnConnect">Connect</button>
+  <button id="btnScanAll" class="sec">Scan all</button>
+  <button id="btnDisconnect" class="sec hidden">Disconnect</button>
 </header>
 
 <main>
   <!-- UNLOCK -->
   <div class="card hidden" id="cardAuth">
-    <h2>Mở khóa</h2>
-    <label>Mật khẩu thiết bị</label>
+    <h2>Unlock</h2>
+    <label>Device password</label>
     <input id="passInput" type="password" value="0000" autocomplete="off">
-    <div class="hint">Challenge-Response: app đọc nonce, gửi SHA-256(mật khẩu ‖ nonce). Mật khẩu không bao giờ gửi thô.</div>
-    <div class="btnbar"><button id="btnUnlock">🔓 Mở khóa</button></div>
+    <div class="hint">Challenge-response: the app reads a nonce and sends SHA-256(password ‖ nonce). The password is never transmitted in clear text.</div>
+    <div class="btnbar"><button id="btnUnlock">🔓 Unlock</button></div>
   </div>
 
   <!-- GENERAL -->
   <div class="card hidden" id="cardGen">
-    <h2>Cấu hình chung</h2>
-    <label>Tên thiết bị (tối đa 29 ký tự)</label>
+    <h2>General Configuration</h2>
+    <label>Device name (max 29 characters)</label>
     <input id="genName" maxlength="29">
-    <div class="row">
-      <div>
-        <label>Global TX Power</label>
-        <select id="genTx"></select>
-      </div>
-      <div>
-        <label>Đổi mật khẩu (để trống = giữ nguyên)</label>
-        <input id="genPass" type="text" maxlength="32" placeholder="••••">
-      </div>
-    </div>
+    <label>Change password (leave blank to keep)</label>
+    <input id="genPass" type="text" maxlength="32" placeholder="••••">
     <div class="chk">
       <input id="genPwReq" type="checkbox">
-      <label style="margin:0">Yêu cầu mật khẩu khi kết nối</label>
+      <label style="margin:0">Require password on connect</label>
     </div>
     <div class="btnbar">
-      <button id="btnGenApply">Áp dụng (RAM)</button>
-      <button id="btnSave" class="sec">💾 Lưu Flash</button>
-      <button id="btnReboot" class="sec">↻ Khởi động lại</button>
+      <button id="btnGenApply">Apply (RAM)</button>
+      <button id="btnSave" class="sec">💾 Save to Flash</button>
+      <button id="btnReboot" class="sec">↻ Reboot</button>
       <button id="btnFactory" class="danger">⚠ Factory Reset</button>
     </div>
-    <div class="hint">“Áp dụng” đổi tên + TX power tức thì nhưng chưa ghi flash. Bấm “Lưu Flash” để giữ qua reboot.</div>
+    <div class="hint">“Apply” changes the name immediately but does not write flash. Click “Save to Flash” to persist across reboots.</div>
   </div>
 
   <!-- SLOTS -->
   <div class="card hidden" id="cardSlot">
-    <h2>Cấu hình Slot</h2>
+    <h2>Slot Configuration</h2>
     <div class="slots" id="slotTabs"></div>
     <div class="row">
-      <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Bật slot</label></div>
-      <div class="chk"><input id="sConn" type="checkbox"><label style="margin:0">Cho kết nối (connectable)</label></div>
+      <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
+      <div class="chk"><input id="sConn" type="checkbox"><label style="margin:0">Connectable</label></div>
     </div>
     <div class="row">
       <div>
-        <label>Chu kỳ phát (ms, 20–10000)</label>
+        <label>Advertising interval (ms, 20–10000)</label>
         <input id="sInt" type="number" min="20" max="10000" value="100">
       </div>
       <div>
-        <label>Measured Power @1m (dBm, riêng slot)</label>
+        <label>Measured Power @1m (dBm, payload)</label>
         <input id="sMp" type="number" min="-128" max="20" value="-59">
       </div>
+      <div>
+        <label>TX Power (dBm, radio)</label>
+        <select id="sTx"></select>
+      </div>
     </div>
-    <label>Loại gói (Frame Type)</label>
+    <label>Frame Type</label>
     <select id="sFrame">
       <option value="1">1 — iBeacon (Legacy)</option>
       <option value="2">2 — Eddystone-URL (Legacy)</option>
       <option value="3">3 — Eddystone-UID (Legacy)</option>
-      <option value="4">4 — Eddystone-TLM (Legacy, tự sinh)</option>
+      <option value="4">4 — Eddystone-TLM (Legacy, auto-generated)</option>
       <option value="5">5 — Custom (Extended)</option>
     </select>
 
@@ -142,48 +138,48 @@
         <div><label>Major (0–65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
         <div><label>Minor (0–65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
       </div>
-      <div class="hint">Major/Minor lưu LE, firmware tự đổi sang BE khi lên sóng.</div>
+      <div class="hint">Major/Minor are stored little-endian; the firmware converts them to big-endian on air.</div>
     </div>
 
     <div id="fUrl" class="frameBox hidden">
       <label>URL</label>
       <input id="urlVal" value="https://www.nordicsemi.com">
-      <div class="hint">Tự mã hóa scheme + hậu tố (.com/.org…) theo chuẩn Eddystone, tối đa 17 byte sau scheme.</div>
+      <div class="hint">Automatically encodes the scheme + suffix (.com/.org…) per the Eddystone spec, max 17 bytes after the scheme.</div>
     </div>
 
     <div id="fUid" class="frameBox hidden">
       <div class="row">
-        <div><label>Namespace (20 hex / 10 byte)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
-        <div><label>Instance (12 hex / 6 byte)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
+        <div><label>Namespace (20 hex / 10 bytes)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
+        <div><label>Instance (12 hex / 6 bytes)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
       </div>
     </div>
 
     <div id="fTlm" class="frameBox hidden">
-      <div class="hint">TLM tự sinh: điện áp (SAADC VDD), nhiệt độ die, bộ đếm quảng bá + thời gian. Không có gì để nhập.</div>
+      <div class="hint">TLM is auto-generated: voltage (SAADC VDD), die temperature, advertising counter and uptime. Nothing to enter.</div>
     </div>
 
     <div id="fCustom" class="frameBox hidden">
-      <label>Manufacturer ID (cố định)</label>
+      <label>Manufacturer ID (fixed)</label>
       <span class="fixedbadge">0x5054 — Tapama</span>
-      <label>Payload (hex, tối đa 29 byte — đứng sau Manufacturer ID)</label>
+      <label>Payload (hex, max 29 bytes — placed after the Manufacturer ID)</label>
       <input id="cData" class="mono" value="010203deadbeef">
-      <div class="hint">Phát dưới dạng Extended PDU, AD type 0xFF (Manufacturer Specific Data), company ID 0x5054 (little-endian 54 50) + payload.</div>
+      <div class="hint">Broadcast as an Extended PDU, AD type 0xFF (Manufacturer Specific Data), company ID 0x5054 (little-endian 54 50) + payload.</div>
     </div>
 
     <div class="btnbar">
-      <button id="btnReadSlot" class="sec">⭯ Đọc lại slot</button>
-      <button id="btnWriteSlot">✍ Ghi slot</button>
+      <button id="btnReadSlot" class="sec">⭯ Re-read slot</button>
+      <button id="btnWriteSlot">✍ Write slot</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>Nhật ký</h2>
+    <h2>Log</h2>
     <div id="log"></div>
   </div>
 </main>
 
 <script>
-// ============ UUIDs (khớp gatt_svc.c) ============
+// ============ UUIDs (must match gatt_svc.c) ============
 const SVC  = 'e7a10000-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_AUTH='e7a10001-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_GEN ='e7a10002-9b6a-4c2e-9f1d-2b3c4d5e6f70';
@@ -224,7 +220,7 @@ const URL_SUFFIX=['.com/','.org/','.edu/','.net/','.info/','.biz/','.gov/',
 function encodeUrl(url){
   let scheme=-1;
   for(let i=0;i<URL_SCHEMES.length;i++) if(url.startsWith(URL_SCHEMES[i])){scheme=i;break;}
-  if(scheme<0) throw new Error('URL phải bắt đầu bằng http:// hoặc https://');
+  if(scheme<0) throw new Error('URL must start with http:// or https://');
   let rest=url.slice(URL_SCHEMES[scheme].length);
   const out=[];
   while(rest.length){
@@ -234,7 +230,7 @@ function encodeUrl(url){
     }
     if(!matched){out.push(rest.charCodeAt(0));rest=rest.slice(1);}
   }
-  if(out.length>17) throw new Error('URL quá dài (>17 byte sau mã hóa)');
+  if(out.length>17) throw new Error('URL too long (>17 bytes after encoding)');
   return {scheme, bytes:Uint8Array.from(out)};
 }
 function decodeUrl(scheme, bytes){
@@ -246,7 +242,7 @@ function decodeUrl(scheme, bytes){
 // ============ connect ============
 async function finishConnect(){
   device.addEventListener('gattserverdisconnected', onDisc);
-  log('Đang kết nối GATT…');
+  log('Connecting GATT…');
   server = await device.gatt.connect();
   const svc = await server.getPrimaryService(SVC);
   chars.auth = await svc.getCharacteristic(C_AUTH);
@@ -254,30 +250,30 @@ async function finishConnect(){
   chars.sel  = await svc.getCharacteristic(C_SEL);
   chars.slot = await svc.getCharacteristic(C_SLOT);
   chars.cmd  = await svc.getCharacteristic(C_CMD);
-  $('status').textContent = device.name||'Đã kết nối';
+  $('status').textContent = device.name||'Connected';
   $('status').classList.add('on');
   $('btnConnect').classList.add('hidden');
   $('btnScanAll').classList.add('hidden');
   $('btnDisconnect').classList.remove('hidden');
   $('cardAuth').classList.remove('hidden');
   $('authpill').classList.remove('hidden');
-  log('Đã kết nối ✔ — hãy mở khóa', 'log-ok');
+  log('Connected ✔ — please unlock', 'log-ok');
 }
 
 $('btnConnect').onclick = async () => {
   try{
-    log('Đang quét thiết bị Tapama (lọc theo tên + service)…');
+    log('Scanning for Tapama devices (filter by name + service)…');
     device = await navigator.bluetooth.requestDevice({
       filters:[{namePrefix:'Tapama'},{services:[SVC]}],
       optionalServices:[SVC]
     });
     await finishConnect();
-  }catch(e){ log('Lỗi kết nối: '+e.message,'log-err'); }
+  }catch(e){ log('Connection error: '+e.message,'log-err'); }
 };
 
 $('btnScanAll').onclick = async () => {
   try{
-    log('Quét TẤT CẢ thiết bị — chọn "Tapama" trong danh sách…');
+    log('Scanning ALL devices — pick "Tapama" from the list…');
     device = await navigator.bluetooth.requestDevice({
       acceptAllDevices:true,
       optionalServices:[SVC]
@@ -285,14 +281,14 @@ $('btnScanAll').onclick = async () => {
     await finishConnect();
   }catch(e){
     if(e.name==='NotFoundError' && /service/i.test(e.message))
-      log('Thiết bị bạn chọn không có service Tapama. Chọn đúng "Tapama".','log-err');
-    else log('Lỗi kết nối: '+e.message,'log-err');
+      log('The selected device has no Tapama service. Please pick the "Tapama" device.','log-err');
+    else log('Connection error: '+e.message,'log-err');
   }
 };
 
 function onDisc(){
-  log('Thiết bị đã ngắt kết nối','log-warn');
-  $('status').textContent='Chưa kết nối'; $('status').classList.remove('on');
+  log('Device disconnected','log-warn');
+  $('status').textContent='Not connected'; $('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');
   $('btnScanAll').classList.remove('hidden');
   ['btnDisconnect','cardAuth','cardGen','cardSlot','authpill']
@@ -303,7 +299,7 @@ $('btnDisconnect').onclick = () => { if(device&&device.gatt.connected) device.ga
 // ============ unlock (challenge-response) ============
 $('btnUnlock').onclick = async () => {
   try{
-    log('Đọc nonce (challenge)…');
+    log('Reading nonce (challenge)…');
     const nonceDv = await chars.auth.readValue();
     const nonce = new Uint8Array(nonceDv.buffer);
     log('nonce = '+bytesToHex(nonce));
@@ -311,22 +307,22 @@ $('btnUnlock').onclick = async () => {
     const combined = new Uint8Array(pass.length + nonce.length);
     combined.set(pass,0); combined.set(nonce,pass.length);
     const hashBuf = await crypto.subtle.digest('SHA-256', combined);
-    log('Gửi response SHA-256…');
+    log('Sending SHA-256 response…');
     await writeChar(chars.auth, new Uint8Array(hashBuf));
-    log('Mở khóa thành công 🔓','log-ok');
-    $('authpill').textContent='🔓 Đã mở khóa'; $('authpill').classList.add('on');
+    log('Unlocked 🔓','log-ok');
+    $('authpill').textContent='🔓 Unlocked'; $('authpill').classList.add('on');
     $('cardGen').classList.remove('hidden');
     $('cardSlot').classList.remove('hidden');
     await readGeneral();
-    buildSlotTabs(); await selectSlot(1);
+    buildSlotTabs(); await selectSlot(0);
   }catch(e){
-    log('Mở khóa thất bại (sai mật khẩu?): '+e.message,'log-err');
+    log('Unlock failed (wrong password?): '+e.message,'log-err');
   }
 };
 
 // ============ general config ============
 function buildTxOptions(){
-  const sel=$('genTx'); sel.innerHTML='';
+  const sel=$('sTx'); sel.innerHTML='';
   TX_LEVELS.forEach(v=>{
     const o=document.createElement('option'); o.value=v; o.textContent=v+' dBm'; sel.appendChild(o);
   });
@@ -334,45 +330,44 @@ function buildTxOptions(){
 async function readGeneral(){
   const dv = await chars.gen.readValue();
   const b = new Uint8Array(dv.buffer);
-  const pwReq=b[0], tx=s8(b[1]), nlen=b[2];
-  const name=new TextDecoder().decode(b.slice(3,3+nlen));
-  $('genName').value=name; $('genTx').value=tx; $('genPwReq').checked=!!pwReq;
+  const pwReq=b[0], nlen=b[1];
+  const name=new TextDecoder().decode(b.slice(2,2+nlen));
+  $('genName').value=name; $('genPwReq').checked=!!pwReq;
   $('genPass').value='';
-  log(`Đọc cấu hình chung: name="${name}", tx=${tx}dBm, pwReq=${pwReq}`);
+  log(`General config read: name="${name}", requirePassword=${pwReq}`);
 }
 function buildGenWrite(){
   const name=new TextEncoder().encode($('genName').value.slice(0,29));
   const pass=new TextEncoder().encode($('genPass').value.slice(0,32));
   const buf=[]; buf.push($('genPwReq').checked?1:0);
-  buf.push(u8(parseInt($('genTx').value,10)));
   buf.push(name.length); name.forEach(x=>buf.push(x));
-  buf.push(pass.length); pass.forEach(x=>buf.push(x)); // pass_len=0 => giữ nguyên
+  buf.push(pass.length); pass.forEach(x=>buf.push(x)); // pass_len=0 => keep current
   return Uint8Array.from(buf);
 }
 $('btnGenApply').onclick = async () => {
   try{ await writeChar(chars.gen, buildGenWrite());
-    log('Đã áp dụng cấu hình chung ✔','log-ok'); $('genPass').value=''; await readGeneral();
-  }catch(e){ log('Lỗi ghi cấu hình chung: '+e.message,'log-err'); }
+    log('General config applied ✔','log-ok'); $('genPass').value=''; await readGeneral();
+  }catch(e){ log('Failed to write general config: '+e.message,'log-err'); }
 };
-$('btnSave').onclick    = () => sendCmd(0x01,'Lưu flash');
-$('btnReboot').onclick  = () => sendCmd(0x02,'Khởi động lại');
-$('btnFactory').onclick = () => { if(confirm('Xóa toàn bộ cấu hình về mặc định?')) sendCmd(0x03,'Factory reset'); };
+$('btnSave').onclick    = () => sendCmd(0x01,'Save to flash');
+$('btnReboot').onclick  = () => sendCmd(0x02,'Reboot');
+$('btnFactory').onclick = () => { if(confirm('Erase all configuration and restore defaults?')) sendCmd(0x03,'Factory reset'); };
 async function sendCmd(code,name){
   try{ await writeChar(chars.cmd, Uint8Array.of(code));
-    log(name+' — đã gửi lệnh ✔','log-ok');
-  }catch(e){ log('Lỗi lệnh '+name+': '+e.message,'log-err'); }
+    log(name+' — command sent ✔','log-ok');
+  }catch(e){ log('Command error ('+name+'): '+e.message,'log-err'); }
 }
 
 // ============ slots ============
 function buildSlotTabs(){
   const t=$('slotTabs'); t.innerHTML='';
-  for(let i=1;i<=6;i++){
+  for(let i=0;i<=5;i++){
     const b=document.createElement('button'); b.textContent=i;
     b.onclick=()=>selectSlot(i); t.appendChild(b);
   }
 }
 function markTab(){ document.querySelectorAll('#slotTabs button')
-  .forEach((b,i)=>b.classList.toggle('active', i+1===curSlot)); }
+  .forEach((b,i)=>b.classList.toggle('active', i===curSlot)); }
 
 function showFrame(ft){
   ['fIbeacon','fUrl','fUid','fTlm','fCustom'].forEach(x=>$(x).classList.add('hidden'));
@@ -384,7 +379,7 @@ $('sFrame').onchange = () => showFrame(parseInt($('sFrame').value,10));
 async function selectSlot(n){
   curSlot=n; markTab();
   try{ await writeChar(chars.sel, Uint8Array.of(n)); await readSlot(); }
-  catch(e){ log('Lỗi chọn slot: '+e.message,'log-err'); }
+  catch(e){ log('Failed to select slot: '+e.message,'log-err'); }
 }
 $('btnReadSlot').onclick = readSlot;
 
@@ -395,8 +390,9 @@ async function readSlot(){
   $('sEn').checked=!!b[0]; $('sConn').checked=!!b[1];
   $('sInt').value = b[2] | (b[3]<<8);
   $('sMp').value  = s8(b[4]);
-  const ft=b[5]; $('sFrame').value=ft; showFrame(ft);
-  const u=b.slice(6); // 31-byte union
+  $('sTx').value  = s8(b[5]);
+  const ft=b[6]; $('sFrame').value=ft; showFrame(ft);
+  const u=b.slice(7); // 31-byte union
   if(ft===1){
     $('ibUuid').value = formatUuid(bytesToHex(u.slice(0,16)));
     $('ibMajor').value = u[16] | (u[17]<<8);
@@ -409,24 +405,25 @@ async function readSlot(){
   }else if(ft===5){
     $('cData').value = bytesToHex(u.slice(2,2+u[1]));
   }
-  log(`Slot ${curSlot}: enabled=${b[0]}, conn=${b[1]}, frame=${ft}, int=${b[2]|(b[3]<<8)}ms`);
+  log(`Slot ${curSlot}: enabled=${b[0]}, connectable=${b[1]}, tx=${s8(b[5])}dBm, frame=${ft}, interval=${b[2]|(b[3]<<8)}ms`);
 }
 
 const formatUuid = h => h.length===32 ?
   `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}` : h;
 
 function buildSlotWrite(){
-  const buf=new Uint8Array(37);
+  const buf=new Uint8Array(38);
   buf[0]=$('sEn').checked?1:0;
   buf[1]=$('sConn').checked?1:0;
   const intMs=Math.max(20,Math.min(10000,parseInt($('sInt').value,10)||100));
   buf[2]=intMs&0xff; buf[3]=(intMs>>8)&0xff;
   buf[4]=u8(parseInt($('sMp').value,10)||0);
-  const ft=parseInt($('sFrame').value,10); buf[5]=ft;
+  buf[5]=u8(parseInt($('sTx').value,10)||0);
+  const ft=parseInt($('sFrame').value,10); buf[6]=ft;
   let u=new Uint8Array(31);
   if(ft===1){
     const uuid=hexToBytes($('ibUuid').value);
-    if(uuid.length!==16) throw new Error('UUID phải đúng 16 byte (32 hex)');
+    if(uuid.length!==16) throw new Error('UUID must be exactly 16 bytes (32 hex)');
     u.set(uuid,0);
     const maj=parseInt($('ibMajor').value,10)||0, min=parseInt($('ibMinor').value,10)||0;
     u[16]=maj&0xff; u[17]=(maj>>8)&0xff; u[18]=min&0xff; u[19]=(min>>8)&0xff;
@@ -435,31 +432,31 @@ function buildSlotWrite(){
     u[0]=scheme; u[1]=bytes.length; u.set(bytes,2);
   }else if(ft===3){
     const ns=hexToBytes($('uidNs').value), inst=hexToBytes($('uidInst').value);
-    if(ns.length!==10) throw new Error('Namespace phải 10 byte (20 hex)');
-    if(inst.length!==6) throw new Error('Instance phải 6 byte (12 hex)');
+    if(ns.length!==10) throw new Error('Namespace must be 10 bytes (20 hex)');
+    if(inst.length!==6) throw new Error('Instance must be 6 bytes (12 hex)');
     u.set(ns,0); u.set(inst,10);
   }else if(ft===5){
     const data=hexToBytes($('cData').value);
-    if(data.length>29) throw new Error('Payload tối đa 29 byte');
-    u[0]=0xff; u[1]=data.length; u.set(data,2); // u[0] reserved; firmware ép 0xFF + company 0x5054
+    if(data.length>29) throw new Error('Payload max 29 bytes');
+    u[0]=0xff; u[1]=data.length; u.set(data,2); // u[0] reserved; firmware forces 0xFF + company 0x5054
   }
-  buf.set(u,6);
+  buf.set(u,7);
   return buf;
 }
 $('btnWriteSlot').onclick = async () => {
   try{
     const data=buildSlotWrite();
     await writeChar(chars.slot, data);
-    log(`Ghi slot ${curSlot} thành công ✔ (${bytesToHex(data)})`,'log-ok');
-  }catch(e){ log('Lỗi ghi slot: '+e.message,'log-err'); }
+    log(`Slot ${curSlot} written ✔ (${bytesToHex(data)})`,'log-ok');
+  }catch(e){ log('Failed to write slot: '+e.message,'log-err'); }
 };
 
 // ============ init ============
 if(!navigator.bluetooth){
-  log('Trình duyệt không hỗ trợ Web Bluetooth. Dùng Chrome/Edge trên desktop hoặc Android.','log-err');
+  log('This browser does not support Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');
 }
 buildTxOptions();
-log('Sẵn sàng. Bấm “Kết nối”.');
+log('Ready. Click “Connect”.');
 </script>
 </body>
 </html>
