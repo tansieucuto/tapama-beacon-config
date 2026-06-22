@@ -262,9 +262,9 @@ async function finishConnect(){
 
 $('btnConnect').onclick = async () => {
   try{
-    log('Scanning for Tapama devices (filter by name + service)…');
+    log('Scanning for Tapama devices (filter by service UUID)…');
     device = await navigator.bluetooth.requestDevice({
-      filters:[{namePrefix:'Tapama'},{services:[SVC]}],
+      filters:[{services:[SVC]}],
       optionalServices:[SVC]
     });
     await finishConnect();
