@@ -5,57 +5,53 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tapama Beacon Configurator</title>
 <style>
-  :root{
-    --bg:#0a0a0a; --panel:#141414; --panel2:#1c1c1c; --line:#2b2b2b;
-    --txt:#e9e9e9; --muted:#8c8c8c; --accent:#c8c8c8; --accent2:#ffffff;
-  }
+  :root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--line:#2b2b2b;
+    --txt:#e9e9e9;--muted:#8c8c8c;--accent:#c8c8c8;--warn:#e0b050;}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
        background:var(--bg);color:var(--txt);line-height:1.5}
   header{padding:18px 20px;border-bottom:1px solid var(--line);
          display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   header h1{font-size:18px;margin:0;font-weight:650}
-  .pill{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);
-        color:var(--muted)}
+  .pill{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);color:var(--muted)}
   .pill.on{background:#2e2e2e;color:#fff}
   main{max-width:760px;margin:0 auto;padding:20px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-        padding:18px;margin-bottom:16px}
-  .card h2{font-size:14px;margin:0 0 14px;color:#cfcfcf;
-           text-transform:uppercase;letter-spacing:.5px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .card h2{font-size:14px;margin:0 0 14px;color:#cfcfcf;text-transform:uppercase;letter-spacing:.5px}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-  input,select{width:100%;padding:9px 11px;background:var(--panel2);
-        border:1px solid var(--line);border-radius:8px;color:var(--txt);
-        font-size:14px;font-family:inherit}
+  input,select{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
+        border-radius:8px;color:var(--txt);font-size:14px;font-family:inherit}
   input:focus,select:focus{outline:none;border-color:#6a6a6a}
   .row{display:flex;gap:12px;flex-wrap:wrap}
   .row>div{flex:1;min-width:140px}
   .chk{display:flex;align-items:center;gap:8px;margin-top:12px}
   .chk input{width:auto}
   button{padding:10px 16px;border:none;border-radius:8px;background:var(--accent);
-         color:#0a0a0a;font-weight:600;font-size:14px;cursor:pointer;
-         font-family:inherit}
-  button:hover{background:#fff;color:#0a0a0a}
+         color:#0a0a0a;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover{background:#fff}
   button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
   button.sec:hover{background:#262626}
   button.danger{background:var(--panel2);color:#cfcfcf;border:1px solid #3a3a3a}
-  button.danger:hover{background:#262626;color:#fff}
+  button.tiny{padding:5px 9px;font-size:12px}
   button:disabled{opacity:.4;cursor:not-allowed}
   .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   .hidden{display:none}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .hint{font-size:11px;color:var(--muted);margin-top:4px}
-  .fixedbadge{display:inline-block;padding:9px 11px;background:#1c1c1c;
-       border:1px solid var(--line);border-radius:8px;color:#cfcfcf;
-       font-family:ui-monospace,monospace;font-size:14px;width:100%}
-  #log{background:#000;border:1px solid var(--line);border-radius:8px;
-       padding:12px;height:150px;overflow:auto;font-family:ui-monospace,monospace;
-       font-size:12px;white-space:pre-wrap;color:#8c8c8c}
-  .log-ok{color:#cfcfcf} .log-err{color:#f2f2f2;font-weight:600} .log-warn{color:#9a9a9a}
+  .warn{color:var(--warn)}
+  .fixedbadge{display:inline-block;padding:9px 11px;background:#1c1c1c;border:1px solid var(--line);
+       border-radius:8px;color:#cfcfcf;font-family:ui-monospace,monospace;font-size:14px;width:100%}
+  #log{background:#000;border:1px solid var(--line);border-radius:8px;padding:12px;height:150px;
+       overflow:auto;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap;color:#8c8c8c}
+  .log-ok{color:#cfcfcf}.log-err{color:#f2f2f2;font-weight:600}.log-warn{color:#9a9a9a}
   .slots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
   .slots button{flex:1;min-width:42px;padding:8px 0}
   .slots button.active{background:var(--accent);color:#0a0a0a}
   .slots button:not(.active){background:var(--panel2);color:var(--muted)}
+  .est{display:flex;gap:16px;flex-wrap:wrap}
+  .est div{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);
+       border-radius:8px;padding:10px}
+  .est b{display:block;font-size:18px;color:#fff}
 </style>
 </head>
 <body>
@@ -70,67 +66,65 @@
 </header>
 
 <main>
-  <!-- UNLOCK -->
   <div class="card hidden" id="cardAuth">
     <h2>Unlock</h2>
     <label>Device password</label>
     <input id="passInput" type="password" value="0000" autocomplete="off">
-    <div class="hint">Challenge-response: the app reads a nonce and sends SHA-256(password ‖ nonce). The password is never transmitted in clear text.</div>
+    <div class="hint">Challenge-response: app reads a nonce, sends SHA-256(password ‖ nonce). Password is never sent in clear.</div>
     <div class="btnbar"><button id="btnUnlock">🔓 Unlock</button></div>
   </div>
 
-  <!-- GENERAL -->
   <div class="card hidden" id="cardGen">
     <h2>General Configuration</h2>
-    <label>Device name (max 29 characters)</label>
+    <label>Device name (max 29 chars)</label>
     <input id="genName" maxlength="29">
-    <label>Change password (leave blank to keep)</label>
+    <label>Change password (blank = keep)</label>
     <input id="genPass" type="text" maxlength="32" placeholder="••••">
-    <div class="chk">
-      <input id="genPwReq" type="checkbox">
-      <label style="margin:0">Require password on connect</label>
-    </div>
+    <div class="chk"><input id="genPwReq" type="checkbox"><label style="margin:0">Require password on connect</label></div>
+    <div class="chk"><input id="genConn" type="checkbox"><label style="margin:0">Connectable (config mode)</label></div>
+    <div class="hint">Connectable is RAM-only and resets to ON at every power-up. Turn OFF to ship a pure non-connectable beacon; power-cycle the device to make it connectable again.</div>
+
+    <div class="chk"><input id="genMacEn" type="checkbox"><label style="margin:0">Override MAC (custom static random)</label></div>
+    <label>Custom MAC (6 bytes hex, e.g. C0:11:22:33:44:55)</label>
+    <input id="genMac" class="mono" maxlength="17" value="C0:11:22:33:44:55">
+    <div class="hint warn">MAC change needs Save + Reboot to take effect. Top two bits are forced to 1 (static random) automatically.</div>
+
     <div class="btnbar">
       <button id="btnGenApply">Apply (RAM)</button>
       <button id="btnSave" class="sec">💾 Save to Flash</button>
       <button id="btnReboot" class="sec">↻ Reboot</button>
       <button id="btnFactory" class="danger">⚠ Factory Reset</button>
     </div>
-    <div class="hint">“Apply” changes the name immediately but does not write flash. Click “Save to Flash” to persist across reboots.</div>
   </div>
 
-  <!-- SLOTS -->
   <div class="card hidden" id="cardSlot">
     <h2>Slot Configuration</h2>
     <div class="slots" id="slotTabs"></div>
+    <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
     <div class="row">
-      <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
-      <div class="chk"><input id="sConn" type="checkbox"><label style="margin:0">Connectable</label></div>
+      <div><label>Advertising interval (ms, 20–10000)</label><input id="sInt" type="number" min="20" max="10000" value="100"></div>
+      <div><label>Measured Power @1m (dBm)</label><input id="sMp" type="number" min="-128" max="20" value="-59"></div>
     </div>
     <div class="row">
-      <div>
-        <label>Advertising interval (ms, 20–10000)</label>
-        <input id="sInt" type="number" min="20" max="10000" value="100">
-      </div>
-      <div>
-        <label>Measured Power @1m (dBm, payload)</label>
-        <input id="sMp" type="number" min="-128" max="20" value="-59">
-      </div>
-      <div>
-        <label>TX Power (dBm, radio)</label>
-        <select id="sTx"></select>
-      </div>
+      <div><label>TX Power (dBm, radio)</label><select id="sTx"></select></div>
+      <div><label>PHY</label><select id="sPhy">
+        <option value="0">1M (legacy, max compatibility)</option>
+        <option value="1">2M (extended — poor scanner support)</option>
+        <option value="2">Coded / Long range (extended)</option>
+      </select></div>
     </div>
+    <div class="hint warn" id="phyWarn"></div>
+
     <label>Frame Type</label>
     <select id="sFrame">
-      <option value="1">1 — iBeacon (Legacy)</option>
-      <option value="2">2 — Eddystone-URL (Legacy)</option>
-      <option value="3">3 — Eddystone-UID (Legacy)</option>
-      <option value="4">4 — Eddystone-TLM (Legacy, auto-generated)</option>
-      <option value="5">5 — Custom (Extended)</option>
+      <option value="1">1 — iBeacon</option>
+      <option value="2">2 — Eddystone-URL</option>
+      <option value="3">3 — Eddystone-UID</option>
+      <option value="4">4 — Eddystone-TLM (auto-generated)</option>
+      <option value="5">5 — Custom (Manufacturer Data)</option>
+      <option value="6">6 — Raw AD (advanced)</option>
     </select>
 
-    <!-- dynamic per-frame -->
     <div id="fIbeacon" class="frameBox">
       <label>UUID (32 hex)</label>
       <input id="ibUuid" class="mono" maxlength="47" value="18ee1516-016b-4bec-ad96-bcb96d166e97">
@@ -138,32 +132,41 @@
         <div><label>Major (0–65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
         <div><label>Minor (0–65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
       </div>
-      <div class="hint">Major/Minor are stored little-endian; the firmware converts them to big-endian on air.</div>
     </div>
 
     <div id="fUrl" class="frameBox hidden">
-      <label>URL</label>
-      <input id="urlVal" value="https://www.nordicsemi.com">
-      <div class="hint">Automatically encodes the scheme + suffix (.com/.org…) per the Eddystone spec, max 17 bytes after the scheme.</div>
+      <label>URL</label><input id="urlVal" value="https://www.nordicsemi.com">
+      <div class="hint">Encodes scheme + suffix per Eddystone spec, max 17 bytes after the scheme.</div>
     </div>
 
     <div id="fUid" class="frameBox hidden">
       <div class="row">
-        <div><label>Namespace (20 hex / 10 bytes)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
-        <div><label>Instance (12 hex / 6 bytes)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
+        <div><label>Namespace (20 hex)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
+        <div><label>Instance (12 hex)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
       </div>
     </div>
 
     <div id="fTlm" class="frameBox hidden">
-      <div class="hint">TLM is auto-generated: voltage (SAADC VDD), die temperature, advertising counter and uptime. Nothing to enter.</div>
+      <div class="hint">TLM auto-generated: VDD voltage, die temperature, adv counter, uptime.</div>
     </div>
 
     <div id="fCustom" class="frameBox hidden">
-      <label>Manufacturer ID (fixed)</label>
-      <span class="fixedbadge">0x5054 — Tapama</span>
-      <label>Payload (hex, max 29 bytes — placed after the Manufacturer ID)</label>
+      <div class="row">
+        <div><label>Company ID (hex, LE on air)</label><input id="cCompany" class="mono" maxlength="4" value="5054"></div>
+      </div>
+      <label>Payload (hex, max 29 bytes — after company ID)</label>
       <input id="cData" class="mono" value="010203deadbeef">
-      <div class="hint">Broadcast as an Extended PDU, AD type 0xFF (Manufacturer Specific Data), company ID 0x5054 (little-endian 54 50) + payload.</div>
+      <div class="hint">AD type 0xFF (Manufacturer Specific Data). Default company 0x5054 = Tapama.</div>
+    </div>
+
+    <div id="fRaw" class="frameBox hidden">
+      <label>Raw AD bytes (hex) — full [len][type][data] blocks, max 31 bytes total</label>
+      <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 0001 0001 c5">
+      <div class="btnbar">
+        <button class="sec tiny" id="rawTplIbeacon">Insert iBeacon template</button>
+        <button class="sec tiny" id="rawTplFlags">Insert flags 020106</button>
+      </div>
+      <div class="hint warn">Advanced: you build the entire AD yourself. Malformed lengths = the slot won't advertise. Spaces are ignored.</div>
     </div>
 
     <div class="btnbar">
@@ -172,291 +175,263 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>Log</h2>
-    <div id="log"></div>
+  <div class="card hidden" id="cardEst">
+    <h2>Battery Estimate (rough)</h2>
+    <div class="est">
+      <div>Avg current<b id="estCur">—</b></div>
+      <div>Est. life (CR2032 225mAh)<b id="estLife">—</b></div>
+      <div>Aggregate adv/sec<b id="estRate">—</b></div>
+    </div>
+    <div class="hint">Very rough first-order model (sleep + per-event charge scaled by TX power). For real numbers, measure with a power profiler.</div>
   </div>
+
+  <div class="card"><h2>Log</h2><div id="log"></div></div>
 </main>
 
 <script>
-// ============ UUIDs (must match gatt_svc.c) ============
-const SVC  = 'e7a10000-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const SVC ='e7a10000-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_AUTH='e7a10001-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_GEN ='e7a10002-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_SEL ='e7a10003-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
+const SLOT_LEN=40;
 
-const TX_LEVELS = [8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
+let device,server,chars={},curSlot=0;
+const slotCache=Array.from({length:6},()=>null); // last-read raw bytes per slot
 
-let device, server, chars = {}, curSlot = 1;
+const $=id=>document.getElementById(id);
+function log(m,c){const e=$('log');e.innerHTML+=`<span class="${c||''}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`;e.scrollTop=e.scrollHeight;}
+const s8=v=>v>127?v-256:v, u8=v=>v&0xff;
+function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');const a=new Uint8Array(h.length/2|0);for(let i=0;i<a.length;i++)a[i]=parseInt(h.substr(i*2,2),16);return a;}
+const bytesToHex=a=>Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
+async function writeChar(c,d){return c.writeValueWithResponse?c.writeValueWithResponse(d):c.writeValue(d);}
 
-// ============ helpers ============
-const $ = id => document.getElementById(id);
-function log(msg, cls){
-  const el = $('log'); const t = new Date().toLocaleTimeString();
-  el.innerHTML += `<span class="${cls||''}">[${t}] ${msg}</span>\n`;
-  el.scrollTop = el.scrollHeight;
-}
-const s8  = v => v > 127 ? v - 256 : v;          // byte -> signed
-const u8  = v => v & 0xff;                        // signed -> byte
-function hexToBytes(h){
-  h = h.replace(/[^0-9a-fA-F]/g,'');
-  const a = new Uint8Array(h.length/2|0);
-  for(let i=0;i<a.length;i++) a[i]=parseInt(h.substr(i*2,2),16);
-  return a;
-}
-const bytesToHex = a => Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
-
-async function writeChar(c, data){
-  if(c.writeValueWithResponse) return c.writeValueWithResponse(data);
-  return c.writeValue(data);
-}
-
-// ============ Eddystone URL codec ============
+// ---- Eddystone URL codec ----
 const URL_SCHEMES=['http://www.','https://www.','http://','https://'];
-const URL_SUFFIX=['.com/','.org/','.edu/','.net/','.info/','.biz/','.gov/',
-                  '.com','.org','.edu','.net','.info','.biz','.gov'];
-function encodeUrl(url){
-  let scheme=-1;
-  for(let i=0;i<URL_SCHEMES.length;i++) if(url.startsWith(URL_SCHEMES[i])){scheme=i;break;}
-  if(scheme<0) throw new Error('URL must start with http:// or https://');
-  let rest=url.slice(URL_SCHEMES[scheme].length);
-  const out=[];
-  while(rest.length){
-    let matched=false;
-    for(let i=0;i<URL_SUFFIX.length;i++){
-      if(rest.startsWith(URL_SUFFIX[i])){out.push(i);rest=rest.slice(URL_SUFFIX[i].length);matched=true;break;}
-    }
-    if(!matched){out.push(rest.charCodeAt(0));rest=rest.slice(1);}
-  }
-  if(out.length>17) throw new Error('URL too long (>17 bytes after encoding)');
-  return {scheme, bytes:Uint8Array.from(out)};
-}
-function decodeUrl(scheme, bytes){
-  let s = URL_SCHEMES[scheme]||'';
-  for(const b of bytes){ s += (b<URL_SUFFIX.length)?URL_SUFFIX[b]:String.fromCharCode(b); }
-  return s;
-}
+const URL_SUFFIX=['.com/','.org/','.edu/','.net/','.info/','.biz/','.gov/','.com','.org','.edu','.net','.info','.biz','.gov'];
+function encodeUrl(url){let sc=-1;for(let i=0;i<URL_SCHEMES.length;i++)if(url.startsWith(URL_SCHEMES[i])){sc=i;break;}
+  if(sc<0)throw new Error('URL must start with http:// or https://');let rest=url.slice(URL_SCHEMES[sc].length);const out=[];
+  while(rest.length){let m=false;for(let i=0;i<URL_SUFFIX.length;i++){if(rest.startsWith(URL_SUFFIX[i])){out.push(i);rest=rest.slice(URL_SUFFIX[i].length);m=true;break;}}
+    if(!m){out.push(rest.charCodeAt(0));rest=rest.slice(1);}}
+  if(out.length>17)throw new Error('URL too long (>17 bytes encoded)');return{scheme:sc,bytes:Uint8Array.from(out)};}
+function decodeUrl(sc,bytes){let s=URL_SCHEMES[sc]||'';for(const b of bytes)s+=(b<URL_SUFFIX.length)?URL_SUFFIX[b]:String.fromCharCode(b);return s;}
 
-// ============ connect ============
+// ---- connect ----
 async function finishConnect(){
-  device.addEventListener('gattserverdisconnected', onDisc);
-  log('Connecting GATT…');
-  server = await device.gatt.connect();
-  const svc = await server.getPrimaryService(SVC);
-  chars.auth = await svc.getCharacteristic(C_AUTH);
-  chars.gen  = await svc.getCharacteristic(C_GEN);
-  chars.sel  = await svc.getCharacteristic(C_SEL);
-  chars.slot = await svc.getCharacteristic(C_SLOT);
-  chars.cmd  = await svc.getCharacteristic(C_CMD);
-  $('status').textContent = device.name||'Connected';
-  $('status').classList.add('on');
-  $('btnConnect').classList.add('hidden');
-  $('btnScanAll').classList.add('hidden');
-  $('btnDisconnect').classList.remove('hidden');
-  $('cardAuth').classList.remove('hidden');
+  device.addEventListener('gattserverdisconnected',onDisc);
+  log('Connecting GATT…');server=await device.gatt.connect();
+  const svc=await server.getPrimaryService(SVC);
+  chars.auth=await svc.getCharacteristic(C_AUTH);
+  chars.gen =await svc.getCharacteristic(C_GEN);
+  chars.sel =await svc.getCharacteristic(C_SEL);
+  chars.slot=await svc.getCharacteristic(C_SLOT);
+  chars.cmd =await svc.getCharacteristic(C_CMD);
+  $('status').textContent=device.name||'Connected';$('status').classList.add('on');
+  $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
+  $('btnDisconnect').classList.remove('hidden');$('cardAuth').classList.remove('hidden');
   $('authpill').classList.remove('hidden');
-  log('Connected ✔ — please unlock', 'log-ok');
+  log('Connected ✔ — please unlock','log-ok');
 }
+$('btnConnect').onclick=async()=>{try{log('Scanning by service UUID…');
+  device=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]});await finishConnect();}
+  catch(e){log('Connection error: '+e.message,'log-err');}};
+$('btnScanAll').onclick=async()=>{try{log('Scanning ALL — pick "Tapama"…');
+  device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});await finishConnect();}
+  catch(e){log('Connection error: '+e.message,'log-err');}};
+function onDisc(){log('Device disconnected','log-warn');
+  $('status').textContent='Not connected';$('status').classList.remove('on');
+  $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
+  ['btnDisconnect','cardAuth','cardGen','cardSlot','cardEst','authpill'].forEach(id=>$(id).classList.add('hidden'));}
+$('btnDisconnect').onclick=()=>{if(device&&device.gatt.connected)device.gatt.disconnect();};
 
-$('btnConnect').onclick = async () => {
-  try{
-    log('Scanning for Tapama devices (filter by service UUID)…');
-    device = await navigator.bluetooth.requestDevice({
-      filters:[{services:[SVC]}],
-      optionalServices:[SVC]
-    });
-    await finishConnect();
-  }catch(e){ log('Connection error: '+e.message,'log-err'); }
-};
+// ---- unlock ----
+$('btnUnlock').onclick=async()=>{try{
+  log('Reading nonce…');const nonce=new Uint8Array((await chars.auth.readValue()).buffer);
+  log('nonce = '+bytesToHex(nonce));
+  const pass=new TextEncoder().encode($('passInput').value);
+  const comb=new Uint8Array(pass.length+nonce.length);comb.set(pass,0);comb.set(nonce,pass.length);
+  const hash=await crypto.subtle.digest('SHA-256',comb);
+  await writeChar(chars.auth,new Uint8Array(hash));
+  log('Unlocked 🔓','log-ok');$('authpill').textContent='🔓 Unlocked';$('authpill').classList.add('on');
+  $('cardGen').classList.remove('hidden');$('cardSlot').classList.remove('hidden');$('cardEst').classList.remove('hidden');
+  await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
+}catch(e){log('Unlock failed (wrong password?): '+e.message,'log-err');}};
 
-$('btnScanAll').onclick = async () => {
-  try{
-    log('Scanning ALL devices — pick "Tapama" from the list…');
-    device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices:true,
-      optionalServices:[SVC]
-    });
-    await finishConnect();
-  }catch(e){
-    if(e.name==='NotFoundError' && /service/i.test(e.message))
-      log('The selected device has no Tapama service. Please pick the "Tapama" device.','log-err');
-    else log('Connection error: '+e.message,'log-err');
-  }
-};
-
-function onDisc(){
-  log('Device disconnected','log-warn');
-  $('status').textContent='Not connected'; $('status').classList.remove('on');
-  $('btnConnect').classList.remove('hidden');
-  $('btnScanAll').classList.remove('hidden');
-  ['btnDisconnect','cardAuth','cardGen','cardSlot','authpill']
-    .forEach(id=>$(id).classList.add('hidden'));
-}
-$('btnDisconnect').onclick = () => { if(device&&device.gatt.connected) device.gatt.disconnect(); };
-
-// ============ unlock (challenge-response) ============
-$('btnUnlock').onclick = async () => {
-  try{
-    log('Reading nonce (challenge)…');
-    const nonceDv = await chars.auth.readValue();
-    const nonce = new Uint8Array(nonceDv.buffer);
-    log('nonce = '+bytesToHex(nonce));
-    const pass = new TextEncoder().encode($('passInput').value);
-    const combined = new Uint8Array(pass.length + nonce.length);
-    combined.set(pass,0); combined.set(nonce,pass.length);
-    const hashBuf = await crypto.subtle.digest('SHA-256', combined);
-    log('Sending SHA-256 response…');
-    await writeChar(chars.auth, new Uint8Array(hashBuf));
-    log('Unlocked 🔓','log-ok');
-    $('authpill').textContent='🔓 Unlocked'; $('authpill').classList.add('on');
-    $('cardGen').classList.remove('hidden');
-    $('cardSlot').classList.remove('hidden');
-    await readGeneral();
-    buildSlotTabs(); await selectSlot(0);
-  }catch(e){
-    log('Unlock failed (wrong password?): '+e.message,'log-err');
-  }
-};
-
-// ============ general config ============
-function buildTxOptions(){
-  const sel=$('sTx'); sel.innerHTML='';
-  TX_LEVELS.forEach(v=>{
-    const o=document.createElement('option'); o.value=v; o.textContent=v+' dBm'; sel.appendChild(o);
-  });
-}
+// ---- general ----
+function buildTxOptions(){const sel=$('sTx');sel.innerHTML='';TX_LEVELS.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+' dBm';sel.appendChild(o);});}
+function macToBytesLE(str){const b=hexToBytes(str);if(b.length!==6)throw new Error('MAC must be 6 bytes');return b.reverse();} // display MSB-first -> LE
+function macFromBytesLE(le){const b=Array.from(le).reverse();return b.map(x=>x.toString(16).padStart(2,'0')).join(':');}
 async function readGeneral(){
-  const dv = await chars.gen.readValue();
-  const b = new Uint8Array(dv.buffer);
-  const pwReq=b[0], nlen=b[1];
-  const name=new TextDecoder().decode(b.slice(2,2+nlen));
-  $('genName').value=name; $('genPwReq').checked=!!pwReq;
-  $('genPass').value='';
-  log(`General config read: name="${name}", requirePassword=${pwReq}`);
+  const b=new Uint8Array((await chars.gen.readValue()).buffer);
+  const pwReq=b[0],conn=b[1],macEn=b[2];const mac=b.slice(3,9);const nlen=b[9];
+  const name=new TextDecoder().decode(b.slice(10,10+nlen));
+  $('genName').value=name;$('genPwReq').checked=!!pwReq;$('genConn').checked=!!conn;
+  $('genMacEn').checked=!!macEn;$('genMac').value=macFromBytesLE(mac);$('genPass').value='';
+  log(`General: name="${name}" pwreq=${pwReq} connectable=${conn} macEn=${macEn} mac=${macFromBytesLE(mac)}`);
 }
 function buildGenWrite(){
   const name=new TextEncoder().encode($('genName').value.slice(0,29));
   const pass=new TextEncoder().encode($('genPass').value.slice(0,32));
-  const buf=[]; buf.push($('genPwReq').checked?1:0);
-  buf.push(name.length); name.forEach(x=>buf.push(x));
-  buf.push(pass.length); pass.forEach(x=>buf.push(x)); // pass_len=0 => keep current
+  let macLE;try{macLE=$('genMacEn').checked?macToBytesLE($('genMac').value):new Uint8Array(6);}catch(e){throw e;}
+  const buf=[];
+  buf.push($('genPwReq').checked?1:0);
+  buf.push($('genConn').checked?1:0);
+  buf.push($('genMacEn').checked?1:0);
+  macLE.forEach(x=>buf.push(x));
+  buf.push(name.length);name.forEach(x=>buf.push(x));
+  buf.push(pass.length);pass.forEach(x=>buf.push(x));
   return Uint8Array.from(buf);
 }
-$('btnGenApply').onclick = async () => {
-  try{ await writeChar(chars.gen, buildGenWrite());
-    log('General config applied ✔','log-ok'); $('genPass').value=''; await readGeneral();
-  }catch(e){ log('Failed to write general config: '+e.message,'log-err'); }
-};
-$('btnSave').onclick    = () => sendCmd(0x01,'Save to flash');
-$('btnReboot').onclick  = () => sendCmd(0x02,'Reboot');
-$('btnFactory').onclick = () => { if(confirm('Erase all configuration and restore defaults?')) sendCmd(0x03,'Factory reset'); };
-async function sendCmd(code,name){
-  try{ await writeChar(chars.cmd, Uint8Array.of(code));
-    log(name+' — command sent ✔','log-ok');
-  }catch(e){ log('Command error ('+name+'): '+e.message,'log-err'); }
-}
+$('btnGenApply').onclick=async()=>{try{await writeChar(chars.gen,buildGenWrite());
+  log('General applied ✔','log-ok');$('genPass').value='';await readGeneral();}
+  catch(e){log('Failed to write general: '+e.message,'log-err');}};
+$('btnSave').onclick   =()=>sendCmd(0x01,'Save to flash');
+$('btnReboot').onclick =()=>sendCmd(0x02,'Reboot');
+$('btnFactory').onclick=()=>{if(confirm('Erase all config and restore defaults?'))sendCmd(0x03,'Factory reset');};
+async function sendCmd(code,name){try{await writeChar(chars.cmd,Uint8Array.of(code));log(name+' — sent ✔','log-ok');}
+  catch(e){log('Command error ('+name+'): '+e.message,'log-err');}}
 
-// ============ slots ============
-function buildSlotTabs(){
-  const t=$('slotTabs'); t.innerHTML='';
-  for(let i=0;i<=5;i++){
-    const b=document.createElement('button'); b.textContent=i;
-    b.onclick=()=>selectSlot(i); t.appendChild(b);
-  }
-}
-function markTab(){ document.querySelectorAll('#slotTabs button')
-  .forEach((b,i)=>b.classList.toggle('active', i===curSlot)); }
+// ---- slots ----
+function buildSlotTabs(){const t=$('slotTabs');t.innerHTML='';for(let i=0;i<6;i++){
+  const b=document.createElement('button');b.textContent=i;b.onclick=()=>selectSlot(i);t.appendChild(b);}}
+function markTab(){document.querySelectorAll('#slotTabs button').forEach((b,i)=>b.classList.toggle('active',i===curSlot));}
 
 function showFrame(ft){
-  ['fIbeacon','fUrl','fUid','fTlm','fCustom'].forEach(x=>$(x).classList.add('hidden'));
-  ({1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom'})[ft] &&
-    $({1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom'}[ft]).classList.remove('hidden');
+  ['fIbeacon','fUrl','fUid','fTlm','fCustom','fRaw'].forEach(x=>$(x).classList.add('hidden'));
+  const map={1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom',6:'fRaw'};
+  if(map[ft])$(map[ft]).classList.remove('hidden');
+  updatePhyWarn();
 }
-$('sFrame').onchange = () => showFrame(parseInt($('sFrame').value,10));
+function updatePhyWarn(){
+  const phy=parseInt($('sPhy').value,10), ft=parseInt($('sFrame').value,10);
+  let w='';
+  if(phy===1) w='2M-only advertising is invisible to almost all phones/scanners. Use only for 2M-capable receivers.';
+  else if(phy===2) w='Coded/Long-range uses Extended advertising — many phone apps and Web Bluetooth scanners cannot see it.';
+  if(phy!==0 && (ft===1||ft===2||ft===3||ft===4))
+    w+=(w?' ':'')+'iBeacon/Eddystone scanners expect legacy 1M; on extended PHY standard apps will NOT decode this frame.';
+  $('phyWarn').textContent=w;
+}
+$('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
+$('sPhy').onchange=updatePhyWarn;
 
-async function selectSlot(n){
-  curSlot=n; markTab();
-  try{ await writeChar(chars.sel, Uint8Array.of(n)); await readSlot(); }
-  catch(e){ log('Failed to select slot: '+e.message,'log-err'); }
-}
-$('btnReadSlot').onclick = readSlot;
+const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
+
+async function selectSlot(n){curSlot=n;markTab();
+  try{await writeChar(chars.sel,Uint8Array.of(n));await readSlot();}
+  catch(e){log('Failed to select slot: '+e.message,'log-err');}}
+$('btnReadSlot').onclick=readSlot;
 
 async function readSlot(){
-  await writeChar(chars.sel, Uint8Array.of(curSlot));
-  const dv = await chars.slot.readValue();
-  const b = new Uint8Array(dv.buffer);
-  $('sEn').checked=!!b[0]; $('sConn').checked=!!b[1];
-  $('sInt').value = b[2] | (b[3]<<8);
-  $('sMp').value  = s8(b[4]);
-  $('sTx').value  = s8(b[5]);
-  const ft=b[6]; $('sFrame').value=ft; showFrame(ft);
-  const u=b.slice(7); // 31-byte union
+  await writeChar(chars.sel,Uint8Array.of(curSlot));
+  const b=new Uint8Array((await chars.slot.readValue()).buffer);
+  slotCache[curSlot]=b;
+  $('sEn').checked=!!b[0];
+  $('sInt').value=b[1]|(b[2]<<8);
+  $('sMp').value=s8(b[3]);
+  $('sTx').value=s8(b[4]);
+  const ft=b[5];$('sFrame').value=ft;$('sPhy').value=b[6];showFrame(ft);
+  const u=b.slice(8); // 32-byte union
   if(ft===1){
-    $('ibUuid').value = formatUuid(bytesToHex(u.slice(0,16)));
-    $('ibMajor').value = u[16] | (u[17]<<8);
-    $('ibMinor').value = u[18] | (u[19]<<8);
+    $('ibUuid').value=formatUuid(bytesToHex(u.slice(0,16)));
+    $('ibMajor').value=u[16]|(u[17]<<8);$('ibMinor').value=u[18]|(u[19]<<8);
   }else if(ft===2){
-    $('urlVal').value = decodeUrl(u[0], u.slice(2,2+u[1]));
+    $('urlVal').value=decodeUrl(u[0],u.slice(2,2+u[1]));
   }else if(ft===3){
-    $('uidNs').value = bytesToHex(u.slice(0,10));
-    $('uidInst').value = bytesToHex(u.slice(10,16));
+    $('uidNs').value=bytesToHex(u.slice(0,10));$('uidInst').value=bytesToHex(u.slice(10,16));
   }else if(ft===5){
-    $('cData').value = bytesToHex(u.slice(2,2+u[1]));
+    $('cCompany').value=((u[0]|(u[1]<<8))>>>0).toString(16).padStart(4,'0');
+    $('cData').value=bytesToHex(u.slice(3,3+u[2]));
+  }else if(ft===6){
+    $('rawData').value=bytesToHex(u.slice(1,1+u[0]));
   }
-  log(`Slot ${curSlot}: enabled=${b[0]}, connectable=${b[1]}, tx=${s8(b[5])}dBm, frame=${ft}, interval=${b[2]|(b[3]<<8)}ms`);
+  log(`Slot ${curSlot}: en=${b[0]} frame=${ft} phy=${b[6]} tx=${s8(b[4])}dBm int=${b[1]|(b[2]<<8)}ms`);
 }
-
-const formatUuid = h => h.length===32 ?
-  `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}` : h;
 
 function buildSlotWrite(){
-  const buf=new Uint8Array(38);
+  const buf=new Uint8Array(SLOT_LEN);
   buf[0]=$('sEn').checked?1:0;
-  buf[1]=$('sConn').checked?1:0;
   const intMs=Math.max(20,Math.min(10000,parseInt($('sInt').value,10)||100));
-  buf[2]=intMs&0xff; buf[3]=(intMs>>8)&0xff;
-  buf[4]=u8(parseInt($('sMp').value,10)||0);
-  buf[5]=u8(parseInt($('sTx').value,10)||0);
-  const ft=parseInt($('sFrame').value,10); buf[6]=ft;
-  let u=new Uint8Array(31);
+  buf[1]=intMs&0xff;buf[2]=(intMs>>8)&0xff;
+  buf[3]=u8(parseInt($('sMp').value,10)||0);
+  buf[4]=u8(parseInt($('sTx').value,10)||0);
+  const ft=parseInt($('sFrame').value,10);buf[5]=ft;
+  buf[6]=parseInt($('sPhy').value,10);
+  buf[7]=0; // reserved
+  const u=new Uint8Array(32);
   if(ft===1){
     const uuid=hexToBytes($('ibUuid').value);
-    if(uuid.length!==16) throw new Error('UUID must be exactly 16 bytes (32 hex)');
+    if(uuid.length!==16)throw new Error('UUID must be 16 bytes (32 hex)');
     u.set(uuid,0);
-    const maj=parseInt($('ibMajor').value,10)||0, min=parseInt($('ibMinor').value,10)||0;
-    u[16]=maj&0xff; u[17]=(maj>>8)&0xff; u[18]=min&0xff; u[19]=(min>>8)&0xff;
+    const maj=parseInt($('ibMajor').value,10)||0,min=parseInt($('ibMinor').value,10)||0;
+    u[16]=maj&0xff;u[17]=(maj>>8)&0xff;u[18]=min&0xff;u[19]=(min>>8)&0xff;
   }else if(ft===2){
     const {scheme,bytes}=encodeUrl($('urlVal').value.trim());
-    u[0]=scheme; u[1]=bytes.length; u.set(bytes,2);
+    u[0]=scheme;u[1]=bytes.length;u.set(bytes,2);
   }else if(ft===3){
-    const ns=hexToBytes($('uidNs').value), inst=hexToBytes($('uidInst').value);
-    if(ns.length!==10) throw new Error('Namespace must be 10 bytes (20 hex)');
-    if(inst.length!==6) throw new Error('Instance must be 6 bytes (12 hex)');
-    u.set(ns,0); u.set(inst,10);
+    const ns=hexToBytes($('uidNs').value),inst=hexToBytes($('uidInst').value);
+    if(ns.length!==10)throw new Error('Namespace must be 10 bytes');
+    if(inst.length!==6)throw new Error('Instance must be 6 bytes');
+    u.set(ns,0);u.set(inst,10);
   }else if(ft===5){
+    const comp=parseInt($('cCompany').value.replace(/[^0-9a-fA-F]/g,''),16)||0;
     const data=hexToBytes($('cData').value);
-    if(data.length>29) throw new Error('Payload max 29 bytes');
-    u[0]=0xff; u[1]=data.length; u.set(data,2); // u[0] reserved; firmware forces 0xFF + company 0x5054
+    if(data.length>29)throw new Error('Custom payload max 29 bytes');
+    u[0]=comp&0xff;u[1]=(comp>>8)&0xff;u[2]=data.length;u.set(data,3);
+  }else if(ft===6){
+    const ad=hexToBytes($('rawData').value);
+    if(ad.length>31)throw new Error('Raw AD max 31 bytes');
+    u[0]=ad.length;u.set(ad,1);
   }
-  buf.set(u,7);
+  buf.set(u,8);
   return buf;
 }
-$('btnWriteSlot').onclick = async () => {
-  try{
-    const data=buildSlotWrite();
-    await writeChar(chars.slot, data);
-    log(`Slot ${curSlot} written ✔ (${bytesToHex(data)})`,'log-ok');
-  }catch(e){ log('Failed to write slot: '+e.message,'log-err'); }
-};
+$('btnWriteSlot').onclick=async()=>{try{
+  const data=buildSlotWrite();await writeChar(chars.slot,data);
+  slotCache[curSlot]=data;
+  log(`Slot ${curSlot} written ✔ (${bytesToHex(data)})`,'log-ok');
+  await refreshEstimate();
+}catch(e){log('Failed to write slot: '+e.message,'log-err');}};
 
-// ============ init ============
-if(!navigator.bluetooth){
-  log('This browser does not support Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');
+// raw templates
+$('rawTplIbeacon').onclick=()=>{$('rawData').value=
+  '0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5';updatePhyWarn();};
+$('rawTplFlags').onclick=()=>{$('rawData').value='020106';};
+
+// ---- battery estimate (rough, clearly labelled) ----
+function eventCharge(txDbm,phy){
+  let q=6; // µC per event @0dBm, 1M (very rough)
+  if(phy===2)q*=6; else if(phy===1)q*=0.7;
+  const txmw=Math.pow(10,txDbm/10);
+  q*=(1+0.04*txmw);
+  return q;
 }
+async function readAllSlots(){
+  const keep=curSlot;
+  for(let i=0;i<6;i++){
+    if(slotCache[i])continue;
+    await writeChar(chars.sel,Uint8Array.of(i));
+    slotCache[i]=new Uint8Array((await chars.slot.readValue()).buffer);
+  }
+  await writeChar(chars.sel,Uint8Array.of(keep));curSlot=keep;markTab();
+}
+async function refreshEstimate(){
+  try{await readAllSlots();}catch(e){return;}
+  let cur=3,rate=0; // µA sleep baseline
+  for(let i=0;i<6;i++){const b=slotCache[i];if(!b||!b[0])continue;
+    const int=b[1]|(b[2]<<8),tx=s8(b[4]),phy=b[6];
+    const ev=1000/int;rate+=ev;cur+=ev*eventCharge(tx,phy);}
+  const lifeH=225000/cur,days=lifeH/24;
+  $('estCur').textContent=cur.toFixed(0)+' µA';
+  $('estRate').textContent=rate.toFixed(1)+' /s';
+  $('estLife').textContent=days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
+}
+
+// ---- init ----
+if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');}
 buildTxOptions();
-log('Ready. Click “Connect”.');
+log('Ready. Click "Connect".');
 </script>
 </body>
-</html>
+</html>                                                                
