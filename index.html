@@ -83,11 +83,7 @@
     <div class="chk"><input id="genPwReq" type="checkbox"><label style="margin:0">Require password on connect</label></div>
     <div class="chk"><input id="genConn" type="checkbox"><label style="margin:0">Connectable (config mode)</label></div>
     <div class="hint">Connectable is RAM-only and resets to ON at every power-up. Turn OFF to ship a pure non-connectable beacon; power-cycle the device to make it connectable again.</div>
-
-    <div class="chk"><input id="genMacEn" type="checkbox"><label style="margin:0">Override MAC (custom static random)</label></div>
-    <label>Custom MAC (6 bytes hex, e.g. C0:11:22:33:44:55)</label>
-    <input id="genMac" class="mono" maxlength="17" value="C0:11:22:33:44:55">
-    <div class="hint warn">MAC change needs Save + Reboot to take effect. Top two bits are forced to 1 (static random) automatically.</div>
+    <div class="hint">BLE address is fixed (factory FICR address of the chip) and cannot be changed.</div>
 
     <div class="btnbar">
       <button id="btnGenApply">Apply (RAM)</button>
@@ -161,7 +157,7 @@
 
     <div id="fRaw" class="frameBox hidden">
       <label>Raw AD bytes (hex) — full [len][type][data] blocks, max 31 bytes total</label>
-      <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 0001 0001 c5">
+      <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5">
       <div class="btnbar">
         <button class="sec tiny" id="rawTplIbeacon">Insert iBeacon template</button>
         <button class="sec tiny" id="rawTplFlags">Insert flags 020106</button>
@@ -199,7 +195,7 @@ const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
 
 let device,server,chars={},curSlot=0;
-const slotCache=Array.from({length:6},()=>null); // last-read raw bytes per slot
+const slotCache=Array.from({length:6},()=>null);
 
 const $=id=>document.getElementById(id);
 function log(m,c){const e=$('log');e.innerHTML+=`<span class="${c||''}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`;e.scrollTop=e.scrollHeight;}
@@ -261,25 +257,20 @@ $('btnUnlock').onclick=async()=>{try{
 
 // ---- general ----
 function buildTxOptions(){const sel=$('sTx');sel.innerHTML='';TX_LEVELS.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+' dBm';sel.appendChild(o);});}
-function macToBytesLE(str){const b=hexToBytes(str);if(b.length!==6)throw new Error('MAC must be 6 bytes');return b.reverse();} // display MSB-first -> LE
-function macFromBytesLE(le){const b=Array.from(le).reverse();return b.map(x=>x.toString(16).padStart(2,'0')).join(':');}
 async function readGeneral(){
   const b=new Uint8Array((await chars.gen.readValue()).buffer);
-  const pwReq=b[0],conn=b[1],macEn=b[2];const mac=b.slice(3,9);const nlen=b[9];
-  const name=new TextDecoder().decode(b.slice(10,10+nlen));
+  const pwReq=b[0],conn=b[1],nlen=b[2];
+  const name=new TextDecoder().decode(b.slice(3,3+nlen));
   $('genName').value=name;$('genPwReq').checked=!!pwReq;$('genConn').checked=!!conn;
-  $('genMacEn').checked=!!macEn;$('genMac').value=macFromBytesLE(mac);$('genPass').value='';
-  log(`General: name="${name}" pwreq=${pwReq} connectable=${conn} macEn=${macEn} mac=${macFromBytesLE(mac)}`);
+  $('genPass').value='';
+  log(`General: name="${name}" pwreq=${pwReq} connectable=${conn}`);
 }
 function buildGenWrite(){
   const name=new TextEncoder().encode($('genName').value.slice(0,29));
   const pass=new TextEncoder().encode($('genPass').value.slice(0,32));
-  let macLE;try{macLE=$('genMacEn').checked?macToBytesLE($('genMac').value):new Uint8Array(6);}catch(e){throw e;}
   const buf=[];
   buf.push($('genPwReq').checked?1:0);
   buf.push($('genConn').checked?1:0);
-  buf.push($('genMacEn').checked?1:0);
-  macLE.forEach(x=>buf.push(x));
   buf.push(name.length);name.forEach(x=>buf.push(x));
   buf.push(pass.length);pass.forEach(x=>buf.push(x));
   return Uint8Array.from(buf);
@@ -434,4 +425,4 @@ buildTxOptions();
 log('Ready. Click "Connect".');
 </script>
 </body>
-</html>                                                                
+</html>
