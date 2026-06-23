@@ -172,13 +172,25 @@
   </div>
 
   <div class="card hidden" id="cardEst">
-    <h2>Battery Estimate (rough)</h2>
-    <div class="est">
-      <div>Avg current<b id="estCur">—</b></div>
-      <div>Est. life (CR2032 225mAh)<b id="estLife">—</b></div>
-      <div>Aggregate adv/sec<b id="estRate">—</b></div>
+    <h2>Battery &amp; Estimate</h2>
+    <div class="row">
+      <div><label>Battery type (coin cell holder)</label>
+        <select id="pinType">
+          <option value="CR2450">CR2450 (~620 mAh)</option>
+          <option value="CR2477">CR2477 (~1000 mAh)</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button id="btnRefreshEst" class="sec" style="width:100%">⭯ Refresh reading</button>
+      </div>
     </div>
-    <div class="hint">Very rough first-order model (sleep + per-event charge scaled by TX power). For real numbers, measure with a power profiler.</div>
+    <div class="est" style="margin-top:14px">
+      <div>Battery voltage<b id="estVolt">—</b></div>
+      <div>Battery level<b id="estPct">—</b></div>
+      <div>Avg current<b id="estCur">—</b></div>
+      <div>Est. remaining<b id="estLife">—</b></div>
+    </div>
+    <div class="hint">Voltage is read live from the device (chip VDD). Level maps 3.0 V = 100%, 2.0 V = 0% (3 V lithium). Remaining time = (level × capacity) ÷ estimated current — a "good enough" figure, not a measured one. Assumes the cell powers the nRF directly (no regulator). For exact figures use a power profiler.</div>
   </div>
 
   <div class="card"><h2>Log</h2><div id="log"></div></div>
@@ -191,6 +203,8 @@ const C_GEN ='e7a10002-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_SEL ='e7a10003-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_BAT ='e7a10006-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const PIN_CAP={CR2450:620,CR2477:1000}; // mAh
 const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
 
@@ -224,6 +238,7 @@ async function finishConnect(){
   chars.sel =await svc.getCharacteristic(C_SEL);
   chars.slot=await svc.getCharacteristic(C_SLOT);
   chars.cmd =await svc.getCharacteristic(C_CMD);
+  try{chars.bat=await svc.getCharacteristic(C_BAT);}catch(e){chars.bat=null;}
   $('status').textContent=device.name||'Connected';$('status').classList.add('on');
   $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
   $('btnDisconnect').classList.remove('hidden');$('cardAuth').classList.remove('hidden');
@@ -407,17 +422,41 @@ async function readAllSlots(){
   }
   await writeChar(chars.sel,Uint8Array.of(keep));curSlot=keep;markTab();
 }
+function fmtDuration(days){
+  if(!isFinite(days)||days<=0) return '—';
+  return days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
+}
+async function readBattery(){
+  if(!chars.bat) return null;
+  try{const dv=await chars.bat.readValue();return dv.getUint16(0,true);}catch(e){return null;}
+}
 async function refreshEstimate(){
   try{await readAllSlots();}catch(e){return;}
-  let cur=3,rate=0; // µA sleep baseline
+
+  // average current from currently-enabled slots
+  let cur=3; // µA sleep baseline
   for(let i=0;i<6;i++){const b=slotCache[i];if(!b||!b[0])continue;
     const int=b[1]|(b[2]<<8),tx=s8(b[4]),phy=b[6];
-    const ev=1000/int;rate+=ev;cur+=ev*eventCharge(tx,phy);}
-  const lifeH=225000/cur,days=lifeH/24;
+    cur+=(1000/int)*eventCharge(tx,phy);}
   $('estCur').textContent=cur.toFixed(0)+' µA';
-  $('estRate').textContent=rate.toFixed(1)+' /s';
-  $('estLife').textContent=days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
+
+  // live battery voltage -> level -> remaining time
+  const mv=await readBattery();
+  if(mv===null||mv===0){
+    $('estVolt').textContent='n/a';$('estPct').textContent='n/a';
+    $('estLife').textContent='n/a';return;
+  }
+  const pct=Math.max(0,Math.min(100,(mv-2000)/(3000-2000)*100));
+  const cap=PIN_CAP[$('pinType').value]||620;          // mAh
+  const remMah=(pct/100)*cap;
+  const avgMa=cur/1000;
+  const days=(remMah/avgMa)/24;
+  $('estVolt').textContent=mv+' mV';
+  $('estPct').textContent=pct.toFixed(0)+' %';
+  $('estLife').textContent=fmtDuration(days);
 }
+$('btnRefreshEst').onclick=refreshEstimate;
+$('pinType').onchange=refreshEstimate;
 
 // ---- init ----
 if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');}
