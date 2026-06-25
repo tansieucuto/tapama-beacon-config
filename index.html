@@ -58,6 +58,7 @@
 <header>
   <h1>📡 Tapama Beacon Configurator</h1>
   <span id="status" class="pill">Not connected</span>
+  <span id="fwver" class="pill hidden"></span>
   <span id="authpill" class="pill hidden">🔒 Locked</span>
   <div style="margin-left:auto"></div>
   <button id="btnConnect">Connect</button>
@@ -99,7 +100,7 @@
     <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
     <div class="row">
       <div><label>Advertising interval (ms, 20–10000)</label><input id="sInt" type="number" min="20" max="10000" value="100"></div>
-      <div><label>Measured Power @1m (dBm)</label><input id="sMp" type="number" min="-128" max="20" value="-59"></div>
+      <div><label>Measured Power @0m (dBm)</label><input id="sMp" type="number" min="-128" max="20" value="-18"></div>
     </div>
     <div class="row">
       <div><label>TX Power (dBm, radio)</label><select id="sTx"></select></div>
@@ -110,6 +111,15 @@
       </select></div>
     </div>
     <div class="hint warn" id="phyWarn"></div>
+
+    <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
+      <label style="margin-top:0">📐 Calibrate Measured Power (at 0 m)</label>
+      <div class="hint">1. Mở nRF Connect, đặt điện thoại sát beacon (~0 m). 2. Đọc RSSI (dBm) của thiết bị này. 3. Nhập vào ô dưới → Apply → bấm "Write slot" để lưu. Firmware tự quy đổi: iBeacon dùng giá trị −41 dB, Eddystone dùng thẳng.</div>
+      <div class="row" style="margin-top:8px">
+        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, vd -22"></div>
+        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply → Measured Power</button></div>
+      </div>
+    </div>
 
     <label>Frame Type</label>
     <select id="sFrame">
@@ -193,6 +203,44 @@
     <div class="hint">Voltage is read live from the device (chip VDD). Level maps 3.0 V = 100%, 2.0 V = 0% (3 V lithium). Remaining time = (level × capacity) ÷ estimated current — a "good enough" figure, not a measured one. Assumes the cell powers the nRF directly (no regulator). For exact figures use a power profiler.</div>
   </div>
 
+
+
+  <div class="card hidden" id="cardOTA">
+    <h2>Firmware OTA Update</h2>
+    <div class="hint">Flow: web app tải <code>manifest.json</code> + <code>.signed.bin</code> từ GitHub Pages, kiểm version/SHA-256, rồi đẩy qua BLE SMP. Không cần user tự tải file bin.</div>
+    <label>Manifest URL</label>
+    <input id="otaManifest" value="./firmware/manifest.json">
+    <div class="row">
+      <div><label>BLE write chunk (bytes)</label><input id="otaChunk" type="number" min="20" max="220" value="128"></div>
+      <div style="display:flex;align-items:flex-end"><button id="btnOtaCheck" class="sec" style="width:100%">Check firmware</button></div>
+    </div>
+    <div class="est" style="margin-top:14px">
+      <div>Current FW<b id="otaCur">—</b></div>
+      <div>Latest FW<b id="otaLatest">—</b></div>
+      <div>File size<b id="otaSize">—</b></div>
+      <div>Status<b id="otaStatus">—</b></div>
+    </div>
+    <progress id="otaProg" value="0" max="100" style="width:100%;height:18px;margin-top:12px"></progress>
+    <div class="btnbar">
+      <button id="btnOtaStart" class="danger">⬆ Update now</button>
+    </div>
+    <div class="hint warn">Đừng tắt nguồn/đóng tab khi đang upload. Sau upload xong, web sẽ set image pending rồi reset thiết bị.</div>
+  </div>
+
+  <div class="card hidden" id="cardProfile">
+    <h2>Config Profile (Clone / Provision)</h2>
+    <div class="hint">Export toàn bộ cấu hình (general + cả 6 slot) thành một profile, rồi import sang máy khác để nhân bản hàng loạt. <b>Password KHÔNG được xuất</b> — mỗi máy giữ pass riêng.</div>
+    <div class="btnbar">
+      <button id="btnExport">⬇ Export current config</button>
+      <button id="btnExportFile" class="sec">💾 Download file</button>
+      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">📂 Load file<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
+    </div>
+    <label>Profile JSON (dán vào đây để import, hoặc sửa tay)</label>
+    <textarea id="profileText" class="mono" style="width:100%;height:120px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-size:12px;resize:vertical" placeholder='{"tapama":"cfg",...}'></textarea>
+    <div class="chk"><input id="importSave" type="checkbox" checked><label style="margin:0">Save to flash sau khi import</label></div>
+    <div class="btnbar"><button id="btnImport">⬆ Import vào máy này</button></div>
+  </div>
+
   <div class="card"><h2>Log</h2><div id="log"></div></div>
 </main>
 
@@ -204,15 +252,19 @@ const C_SEL ='e7a10003-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_BAT ='e7a10006-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const C_VER ='e7a10007-9b6a-4c2e-9f1d-2b3c4d5e6f70';
+const SMP_SVC='8d53dc1d-1db7-4cd3-868b-8a527460aa84';
+const SMP_CHR='da2e7828-fbce-4e01-ae9e-261174997c48';
 const PIN_CAP={CR2450:620,CR2477:1000}; // mAh
 const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
 
 let device,server,chars={},curSlot=0;
+let devInfo={};
 const slotCache=Array.from({length:6},()=>null);
 
 const $=id=>document.getElementById(id);
-function log(m,c){const e=$('log');e.innerHTML+=`<span class="${c||''}">[${new Date().toLocaleTimeString()}] ${m}</span>\n`;e.scrollTop=e.scrollHeight;}
+function log(m,c){const e=$('log'),sp=document.createElement('span');if(c)sp.className=c;sp.textContent=`[${new Date().toLocaleTimeString()}] ${m}`;e.appendChild(sp);e.appendChild(document.createTextNode('\n'));e.scrollTop=e.scrollHeight;}
 const s8=v=>v>127?v-256:v, u8=v=>v&0xff;
 function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');const a=new Uint8Array(h.length/2|0);for(let i=0;i<a.length;i++)a[i]=parseInt(h.substr(i*2,2),16);return a;}
 const bytesToHex=a=>Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
@@ -239,22 +291,33 @@ async function finishConnect(){
   chars.slot=await svc.getCharacteristic(C_SLOT);
   chars.cmd =await svc.getCharacteristic(C_CMD);
   try{chars.bat=await svc.getCharacteristic(C_BAT);}catch(e){chars.bat=null;}
+  try{
+    chars.ver=await svc.getCharacteristic(C_VER);
+    const v=new Uint8Array((await chars.ver.readValue()).buffer);
+    const fw=`v${v[0]}.${v[1]}.${v[2]}`;
+    const feat=v[6]|(v[7]<<8);
+    devInfo={fw:fw.slice(1),slots:v[3],maxFrame:v[4],cfgVer:v[5],feat:feat};
+    $('fwver').textContent='FW '+fw;$('fwver').classList.remove('hidden');
+    log(`Firmware ${fw} — slots=${v[3]} maxFrame=${v[4]} cfgVer=${v[5]} feat=0x${feat.toString(16)}`,'log-ok');
+  }catch(e){chars.ver=null;log('No version characteristic (older firmware)','log-warn');}
   $('status').textContent=device.name||'Connected';$('status').classList.add('on');
   $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
-  $('btnDisconnect').classList.remove('hidden');$('cardAuth').classList.remove('hidden');
+  $('btnDisconnect').classList.remove('hidden');
   $('authpill').classList.remove('hidden');
+  if(await tryOpenWithoutUnlock()) return;
+  $('cardAuth').classList.remove('hidden');
   log('Connected ✔ — please unlock','log-ok');
 }
 $('btnConnect').onclick=async()=>{try{log('Scanning by service UUID…');
-  device=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]});await finishConnect();}
+  device=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC,SMP_SVC]});await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
 $('btnScanAll').onclick=async()=>{try{log('Scanning ALL — pick "Tapama"…');
-  device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});await finishConnect();}
+  device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC,SMP_SVC]});await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
 function onDisc(){log('Device disconnected','log-warn');
   $('status').textContent='Not connected';$('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
-  ['btnDisconnect','cardAuth','cardGen','cardSlot','cardEst','authpill'].forEach(id=>$(id).classList.add('hidden'));}
+  ['btnDisconnect','cardAuth','cardGen','cardSlot','cardEst','cardProfile','cardOTA','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
 $('btnDisconnect').onclick=()=>{if(device&&device.gatt.connected)device.gatt.disconnect();};
 
 // ---- unlock ----
@@ -265,10 +328,21 @@ $('btnUnlock').onclick=async()=>{try{
   const comb=new Uint8Array(pass.length+nonce.length);comb.set(pass,0);comb.set(nonce,pass.length);
   const hash=await crypto.subtle.digest('SHA-256',comb);
   await writeChar(chars.auth,new Uint8Array(hash));
-  log('Unlocked 🔓','log-ok');$('authpill').textContent='🔓 Unlocked';$('authpill').classList.add('on');
-  $('cardGen').classList.remove('hidden');$('cardSlot').classList.remove('hidden');$('cardEst').classList.remove('hidden');
-  await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
+  log('Unlocked 🔓','log-ok');await openUnlockedUi();
 }catch(e){log('Unlock failed (wrong password?): '+e.message,'log-err');}};
+
+
+async function openUnlockedUi(){
+  $('cardAuth').classList.add('hidden');
+  $('authpill').textContent='🔓 Unlocked';$('authpill').classList.add('on');
+  $('cardGen').classList.remove('hidden');$('cardSlot').classList.remove('hidden');$('cardEst').classList.remove('hidden');$('cardOTA').classList.remove('hidden');$('cardProfile').classList.remove('hidden');
+  await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
+  $('otaCur').textContent=devInfo.fw||'—';
+}
+async function tryOpenWithoutUnlock(){
+  try{await openUnlockedUi();log('Connected ✔ — auth disabled / already allowed','log-ok');return true;}
+  catch(e){return false;}
+}
 
 // ---- general ----
 function buildTxOptions(){const sel=$('sTx');sel.innerHTML='';TX_LEVELS.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v+' dBm';sel.appendChild(o);});}
@@ -321,6 +395,12 @@ function updatePhyWarn(){
 }
 $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
 $('sPhy').onchange=updatePhyWarn;
+$('btnCalib').onclick=()=>{
+  const v=parseInt($('calibRssi').value,10);
+  if(isNaN(v)){log('Nhập RSSI @0m (đọc từ nRF Connect) trước','log-warn');return;}
+  $('sMp').value=v;
+  log(`Measured Power (0m) = ${v} dBm — bấm "Write slot" để lưu`,'log-ok');
+};
 
 const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
 
@@ -400,10 +480,219 @@ $('btnWriteSlot').onclick=async()=>{try{
   await refreshEstimate();
 }catch(e){log('Failed to write slot: '+e.message,'log-err');}};
 
+// ============ config profile (clone / provision) ============
+async function readSlotRaw(n){
+  await writeChar(chars.sel,Uint8Array.of(n));
+  return new Uint8Array((await chars.slot.readValue()).buffer);
+}
+async function buildProfile(){
+  const g=new Uint8Array((await chars.gen.readValue()).buffer);
+  const pwreq=g[0],conn=g[1],nlen=g[2];
+  const name=new TextDecoder().decode(g.slice(3,3+nlen));
+  const keep=curSlot,slots=[];
+  for(let i=0;i<6;i++) slots.push(bytesToHex(await readSlotRaw(i)));
+  await writeChar(chars.sel,Uint8Array.of(keep));curSlot=keep;markTab();
+  return {tapama:'cfg',v:devInfo.cfgVer||0,fw:devInfo.fw||'?',name,pwreq,conn,slots};
+}
+$('btnExport').onclick=async()=>{
+  try{$('profileText').value=JSON.stringify(await buildProfile());log('Config exported ✔ — copy chuỗi JSON','log-ok');}
+  catch(e){log('Export failed: '+e.message,'log-err');}
+};
+$('btnExportFile').onclick=async()=>{
+  try{const p=await buildProfile(),s=JSON.stringify(p,null,2);
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));
+    a.download=`tapama-${(p.name||'beacon').replace(/[^\w-]/g,'_')}.json`;a.click();
+    URL.revokeObjectURL(a.href);$('profileText').value=s;log('Config downloaded ✔','log-ok');}
+  catch(e){log('Export failed: '+e.message,'log-err');}
+};
+$('importFile').onchange=(e)=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{$('profileText').value=r.result;log('File loaded — kiểm tra rồi bấm Import','log-ok');};
+  r.readAsText(f);e.target.value='';
+};
+$('btnImport').onclick=async()=>{
+  let p;
+  try{p=JSON.parse($('profileText').value);}catch(e){log('JSON không hợp lệ','log-err');return;}
+  if(p.tapama!=='cfg'||!Array.isArray(p.slots)){log('Không phải profile Tapama','log-err');return;}
+  if(p.slots.length!==6){log(`Profile có ${p.slots.length} slot, cần 6`,'log-err');return;}
+  if(devInfo.cfgVer&&p.v&&p.v!==devInfo.cfgVer&&
+     !confirm(`Profile cfgVersion ${p.v} khác device ${devInfo.cfgVer}. Layout có thể khác. Import tiếp?`)) return;
+  try{
+    const name=new TextEncoder().encode((p.name||'').slice(0,29));
+    const gbuf=[p.pwreq?1:0,p.conn?1:0,name.length];name.forEach(x=>gbuf.push(x));gbuf.push(0);
+    await writeChar(chars.gen,Uint8Array.from(gbuf));
+    for(let i=0;i<6;i++){
+      const blob=hexToBytes(p.slots[i]);
+      if(blob.length!==40){log(`Slot ${i} sai độ dài (${blob.length}), bỏ qua`,'log-warn');continue;}
+      await writeChar(chars.sel,Uint8Array.of(i));
+      await writeChar(chars.slot,blob);
+    }
+    log('Profile imported vào RAM ✔','log-ok');
+    if($('importSave').checked) await sendCmd(0x01,'Save to flash');
+    slotCache.fill(null);await readGeneral();await selectSlot(0);await refreshEstimate();
+  }catch(e){log('Import failed: '+e.message,'log-err');}
+};
 // raw templates
 $('rawTplIbeacon').onclick=()=>{$('rawData').value=
   '0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5';updatePhyWarn();};
 $('rawTplFlags').onclick=()=>{$('rawData').value='020106';};
+
+
+
+// ============ OTA over MCUmgr/SMP BLE ============
+let otaManifestObj=null;
+let smpSeq=0,smpChar=null,smpRx=[],smpWait=null;
+const SMP_OP_READ=0,SMP_OP_READ_RSP=1,SMP_OP_WRITE=2,SMP_OP_WRITE_RSP=3;
+const SMP_GRP_OS=0,SMP_GRP_IMG=1;
+const IMG_ID_STATE=0,IMG_ID_UPLOAD=1;
+const OS_ID_RESET=5;
+
+function parseVer(v){const m=String(v||'').match(/^(\d+)\.(\d+)\.(\d+)/);return m?[+m[1],+m[2],+m[3]]:null;}
+function cmpVer(a,b){a=parseVer(a);b=parseVer(b);if(!a||!b)return 0;for(let i=0;i<3;i++)if(a[i]!==b[i])return a[i]-b[i];return 0;}
+function humanSize(n){return n>1048576?(n/1048576).toFixed(2)+' MB':n>1024?(n/1024).toFixed(1)+' KB':n+' B';}
+function be16(a,o,v){a[o]=(v>>8)&255;a[o+1]=v&255;}
+function readBe16(a,o){return (a[o]<<8)|a[o+1];}
+function concatBytes(list){const n=list.reduce((s,a)=>s+a.length,0),out=new Uint8Array(n);let p=0;for(const a of list){out.set(a,p);p+=a.length;}return out;}
+async function sha256Hex(buf){const h=new Uint8Array(await crypto.subtle.digest('SHA-256',buf));return bytesToHex(h);}
+async function sha256Bytes(buf){return new Uint8Array(await crypto.subtle.digest('SHA-256',buf));}
+
+function cborHead(major,len){
+  if(len<24)return Uint8Array.of((major<<5)|len);
+  if(len<256)return Uint8Array.of((major<<5)|24,len);
+  if(len<65536)return Uint8Array.of((major<<5)|25,(len>>8)&255,len&255);
+  return Uint8Array.of((major<<5)|26,(len>>>24)&255,(len>>>16)&255,(len>>>8)&255,len&255);
+}
+function cborUInt(n){return cborHead(0,n>>>0);}
+function cborBool(b){return Uint8Array.of(b?0xf5:0xf4);}
+function cborBytes(b){return concatBytes([cborHead(2,b.length),b]);}
+function cborText(s){const b=new TextEncoder().encode(s);return concatBytes([cborHead(3,b.length),b]);}
+function cborAny(v){
+  if(v instanceof Uint8Array)return cborBytes(v);
+  if(typeof v==='number')return cborUInt(v);
+  if(typeof v==='boolean')return cborBool(v);
+  if(typeof v==='string')return cborText(v);
+  if(Array.isArray(v))return concatBytes([cborHead(4,v.length),...v.map(cborAny)]);
+  return cborMap(v);
+}
+function cborMap(o){const keys=Object.keys(o).filter(k=>o[k]!==undefined);return concatBytes([cborHead(5,keys.length),...keys.flatMap(k=>[cborText(k),cborAny(o[k])])]);}
+function cborReadLen(a,st,ai){
+  if(ai<24)return ai;
+  if(ai===24)return a[st.i++];
+  if(ai===25){const v=(a[st.i]<<8)|a[st.i+1];st.i+=2;return v;}
+  if(ai===26){const v=((a[st.i]<<24)>>>0)|(a[st.i+1]<<16)|(a[st.i+2]<<8)|a[st.i+3];st.i+=4;return v>>>0;}
+  throw new Error('CBOR len unsupported');
+}
+function cborDecodeAny(a,st={i:0}){
+  const ib=a[st.i++],major=ib>>5,ai=ib&31;
+  if(major===0)return cborReadLen(a,st,ai);
+  if(major===2){const l=cborReadLen(a,st,ai),b=a.slice(st.i,st.i+l);st.i+=l;return b;}
+  if(major===3){const l=cborReadLen(a,st,ai),t=new TextDecoder().decode(a.slice(st.i,st.i+l));st.i+=l;return t;}
+  if(major===4){const l=cborReadLen(a,st,ai),r=[];for(let i=0;i<l;i++)r.push(cborDecodeAny(a,st));return r;}
+  if(major===5){const l=cborReadLen(a,st,ai),o={};for(let i=0;i<l;i++){const k=cborDecodeAny(a,st);o[k]=cborDecodeAny(a,st);}return o;}
+  if(major===7){if(ai===20)return false;if(ai===21)return true;if(ai===22)return null;}
+  throw new Error('CBOR unsupported type '+major+'/'+ai);
+}
+
+function smpOnNotify(e){
+  const b=new Uint8Array(e.target.value.buffer);
+  smpRx.push(b);
+  const all=concatBytes(smpRx);
+  if(all.length<8)return;
+  const need=8+readBe16(all,2);
+  if(all.length<need)return;
+  smpRx=[];
+  if(smpWait){const w=smpWait;smpWait=null;w.resolve(all.slice(0,need));}
+}
+async function smpEnsure(){
+  if(smpChar)return smpChar;
+  const svc=await server.getPrimaryService(SMP_SVC);
+  smpChar=await svc.getCharacteristic(SMP_CHR);
+  smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
+  await smpChar.startNotifications();
+  log('SMP service ready','log-ok');
+  return smpChar;
+}
+async function smpWriteFragments(msg){
+  const ch=await smpEnsure();
+  const n=Math.max(20,Math.min(220,parseInt($('otaChunk').value||'128',10)));
+  for(let off=0;off<msg.length;off+=n){
+    const frag=msg.slice(off,Math.min(msg.length,off+n));
+    if(ch.writeValueWithoutResponse) await ch.writeValueWithoutResponse(frag);
+    else await ch.writeValue(frag);
+    await new Promise(r=>setTimeout(r,2));
+  }
+}
+async function smpReq(op,grp,id,payload,timeoutMs=15000){
+  const seq=(smpSeq++ & 255),body=cborMap(payload||{}),msg=new Uint8Array(8+body.length);
+  msg[0]=op;msg[1]=0;be16(msg,2,body.length);be16(msg,4,grp);msg[6]=seq;msg[7]=id;msg.set(body,8);
+  const got=new Promise((resolve,reject)=>{smpWait={resolve,reject};setTimeout(()=>{if(smpWait){smpWait=null;reject(new Error('SMP timeout'));}},timeoutMs);});
+  await smpWriteFragments(msg);
+  const resp=await got;
+  if(resp[6]!==seq)throw new Error('SMP seq mismatch');
+  const obj=cborDecodeAny(resp.slice(8));
+  if(obj.err)throw new Error(`SMP err group=${obj.err.group} rc=${obj.err.rc}`);
+  if(obj.rc)throw new Error('SMP rc='+obj.rc);
+  return obj;
+}
+async function smpImageState(){return smpReq(SMP_OP_READ,SMP_GRP_IMG,IMG_ID_STATE,{});}
+async function smpImageTest(hash){return smpReq(SMP_OP_WRITE,SMP_GRP_IMG,IMG_ID_STATE,{hash,confirm:false});}
+async function smpReset(){return smpReq(SMP_OP_WRITE,SMP_GRP_OS,OS_ID_RESET,{},3000).catch(()=>{});}
+
+async function otaCheck(){
+  if(!devInfo.fw)throw new Error('No firmware version from device');
+  const url=$('otaManifest').value.trim();
+  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('manifest HTTP '+r.status);
+  const m=await r.json();otaManifestObj={...m,_url:url};
+  $('otaCur').textContent=devInfo.fw;$('otaLatest').textContent=m.version||'—';$('otaSize').textContent=m.size?humanSize(m.size):'—';
+  const c=cmpVer(m.version,devInfo.fw);
+  if(c<=0){$('otaStatus').textContent='No newer firmware';log(`OTA: server ${m.version} <= device ${devInfo.fw}, skip`,'log-warn');return false;}
+  if(!m.file&&!m.bin)throw new Error('manifest missing file/bin');
+  if(!m.sha256||m.sha256.includes('REPLACE'))throw new Error('manifest sha256 chưa điền');
+  $('otaStatus').textContent='Update available';
+  log(`OTA available: ${devInfo.fw} → ${m.version}`,'log-ok');
+  return true;
+}
+async function otaStart(){
+  if(!device||!device.gatt.connected)throw new Error('Not connected');
+  if(!otaManifestObj) await otaCheck();
+  const m=otaManifestObj;
+  if(cmpVer(m.version,devInfo.fw)<=0)throw new Error('Refuse downgrade/same version in web app');
+  const binUrl=new URL(m.file||m.bin,new URL(m._url,location.href)).toString();
+  log('Downloading firmware: '+binUrl);
+  const r=await fetch(binUrl,{cache:'no-store'});if(!r.ok)throw new Error('bin HTTP '+r.status);
+  const fw=new Uint8Array(await r.arrayBuffer());
+  if(m.size&&fw.length!==m.size)throw new Error(`size mismatch ${fw.length} != ${m.size}`);
+  const hex=await sha256Hex(fw);
+  if(hex.toLowerCase()!==String(m.sha256).toLowerCase())throw new Error('SHA-256 mismatch');
+  const sha=await sha256Bytes(fw);
+  await smpEnsure();
+  try{const st=await smpImageState();log('Image state read: '+JSON.stringify(st));}catch(e){log('Image state read failed: '+e.message,'log-warn');}
+
+  let off=0;
+  $('otaProg').value=0;$('otaStatus').textContent='Uploading…';
+  while(off<fw.length){
+    const chunkLen=Math.min(160,fw.length-off);
+    const req={off,data:fw.slice(off,off+chunkLen)};
+    if(off===0){req.len=fw.length;req.sha=sha;req.upgrade=true;}
+    const rsp=await smpReq(SMP_OP_WRITE,SMP_GRP_IMG,IMG_ID_UPLOAD,req,30000);
+    off=(typeof rsp.off==='number')?rsp.off:(off+chunkLen);
+    $('otaProg').value=Math.floor(off*100/fw.length);
+    if(off%8192<chunkLen)log(`OTA upload ${Math.floor(off*100/fw.length)}% (${off}/${fw.length})`);
+  }
+  $('otaStatus').textContent='Setting pending…';
+  const after=await smpImageState();
+  const pendingImg=(after.images||[]).find(x=>x.slot===1 && (!m.version || x.version===m.version));
+  const bootHash=pendingImg && pendingImg.hash;
+  if(!(bootHash instanceof Uint8Array))throw new Error('Cannot find uploaded image hash in slot 1');
+  await smpImageTest(bootHash);
+  log('OTA uploaded + marked pending. Rebooting…','log-ok');
+  $('otaStatus').textContent='Rebooting…';
+  await smpReset();
+}
+$('btnOtaCheck').onclick=async()=>{try{await otaCheck();}catch(e){$('otaStatus').textContent='Check failed';log('OTA check failed: '+e.message,'log-err');}};
+$('btnOtaStart').onclick=async()=>{if(!confirm('Upload firmware and reboot beacon now?'))return;try{await otaStart();}catch(e){$('otaStatus').textContent='Failed';log('OTA failed: '+e.message,'log-err');}};
 
 // ---- battery estimate (rough, clearly labelled) ----
 function eventCharge(txDbm,phy){
