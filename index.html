@@ -704,7 +704,7 @@ async function doOTA(image){
   smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
 
   // 3. upload to slot 1
-  const CHUNK=128;let off=0,seq=0;
+  const CHUNK=64;let off=0,seq=0;
   log('Uploading firmware (this can take a few minutes)...');
   while(off<image.length){
     const data=image.slice(off,off+CHUNK);
