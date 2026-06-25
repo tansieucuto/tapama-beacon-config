@@ -135,8 +135,12 @@
     <div class="hint warn" id="phyWarn"></div>
 
     <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
-      <label style="margin-top:0">How to calibrate Measured Power (at 0 m)</label>
-      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Type that value straight into the <b>Measured Power @0m</b> field above, then click <b>Write slot</b>. The firmware converts automatically: iBeacon subtracts 41 dB (0 m &rarr; 1 m reference), Eddystone uses the 0 m value directly.</div>
+      <label style="margin-top:0">Calibrate Measured Power (at 0 m)</label>
+      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Enter it below, click Apply, then Write slot. The firmware converts automatically: iBeacon uses value -41 dB, Eddystone uses it directly.</div>
+      <div class="row" style="margin-top:8px">
+        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, e.g. -22"></div>
+        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply to Measured Power</button></div>
+      </div>
     </div>
 
     <label>Frame Type</label>
@@ -258,6 +262,7 @@ const MANIFEST_URL='firmware.json'; // hosted next to this page
 
 let device,server,chars={},curSlot=0;
 let devInfo={};
+let otaRunning=false;
 let sessionTimer=null,sessionLeft=SESSION_SECONDS;
 const slotCache=Array.from({length:6},()=>null);
 
@@ -324,7 +329,9 @@ $('btnConnect').onclick=async()=>{try{log('Scanning by service UUID...');
 $('btnScanAll').onclick=async()=>{try{log('Scanning all devices - pick "Tapama"...');
   device=await navigator.bluetooth.requestDevice(reqOpts(true));await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
-function onDisc(){log('Device disconnected','log-warn');stopSession();
+function onDisc(){stopSession();
+  if(otaRunning){log('Update delivered. Device is rebooting and verifying the new firmware - reconnect in ~20s to check the version.','log-ok');otaRunning=false;}
+  else log('Device disconnected','log-warn');
   $('status').textContent='Not connected';$('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
   ['btnDisconnect','cardAuth','cardGen','cardFw','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
@@ -394,6 +401,12 @@ function updatePhyWarn(){
 }
 $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
 $('sPhy').onchange=updatePhyWarn;
+$('btnCalib').onclick=()=>{
+  const v=parseInt($('calibRssi').value,10);
+  if(isNaN(v)){log('Enter the 0m RSSI (read from nRF Connect) first','log-warn');return;}
+  $('sMp').value=v;
+  log(`Measured Power (0m) = ${v} dBm - click Write slot to save`,'log-ok');
+};
 const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
 
 async function selectSlot(n){curSlot=n;markTab();
@@ -611,7 +624,7 @@ $('fwFile').onchange=async(e)=>{
 };
 function otaProgress(done,total){const p=Math.floor(done/total*100);
   $('fwBar').style.width=p+'%';$('fwPct').textContent=p+'% ('+done+'/'+total+' bytes)';}
-function otaFail(){$('fwProgressWrap').classList.add('hidden');}
+function otaFail(){otaRunning=false;$('fwProgressWrap').classList.add('hidden');}
 
 // minimal CBOR encode (map/uint/bstr/tstr/bool)
 function cborEncode(obj){
@@ -675,30 +688,22 @@ function smpRequest(op,group,id,seq,payloadObj){
 }
 async function doOTA(image){
   if(!device||!device.gatt.connected){log('Connect and unlock first','log-err');return;}
+  otaRunning=true;
   $('fwProgressWrap').classList.remove('hidden');otaProgress(0,image.length);
   log(`Firmware image: ${image.length} bytes`);
   const sha=new Uint8Array(await crypto.subtle.digest('SHA-256',image));
 
-await writeChar(chars.cmd, Uint8Array.of(0x04));
-stopSession('Update mode - lock off');
+  // 1. disable the session lock (SMP is registered statically, always present;
+  //    we do NOT disconnect/reconnect - that would drop us back to the lock UI)
+  log('Enabling DFU mode...');
+  await writeChar(chars.cmd,Uint8Array.of(0x04));
+  stopSession('Update mode - lock off');
+  await new Promise(r=>setTimeout(r,400));
 
-log('DFU enabled. Reconnecting to refresh GATT services...');
-
-if (device.gatt.connected) {
-  device.gatt.disconnect();
-}
-
-await new Promise(r => setTimeout(r, 1500));
-
-server = await device.gatt.connect();
-
-let smpSvc;
-try {
-  smpSvc = await server.getPrimaryService(SMP_SVC);
-} catch (e) {
-  throw new Error('SMP service not visible after reconnect: ' + e.message);
-}
-  
+  // 2. discover the SMP service on the SAME connection
+  let smpSvc;
+  try{smpSvc=await server.getPrimaryService(SMP_SVC);}
+  catch(e){throw new Error('SMP service not found: '+e.message);}
   smpChar=await smpSvc.getCharacteristic(SMP_CHR);
   await smpChar.startNotifications();
   smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
