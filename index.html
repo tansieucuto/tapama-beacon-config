@@ -135,12 +135,8 @@
     <div class="hint warn" id="phyWarn"></div>
 
     <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
-      <label style="margin-top:0">Calibrate Measured Power (at 0 m)</label>
-      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Enter it below, click Apply, then Write slot. The firmware converts automatically: iBeacon uses value -41 dB, Eddystone uses it directly.</div>
-      <div class="row" style="margin-top:8px">
-        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, e.g. -22"></div>
-        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply to Measured Power</button></div>
-      </div>
+      <label style="margin-top:0">How to calibrate Measured Power (at 0 m)</label>
+      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Type that value straight into the <b>Measured Power @0m</b> field above, then click <b>Write slot</b>. The firmware converts automatically: iBeacon subtracts 41 dB (0 m &rarr; 1 m reference), Eddystone uses the 0 m value directly.</div>
     </div>
 
     <label>Frame Type</label>
@@ -398,12 +394,6 @@ function updatePhyWarn(){
 }
 $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
 $('sPhy').onchange=updatePhyWarn;
-$('btnCalib').onclick=()=>{
-  const v=parseInt($('calibRssi').value,10);
-  if(isNaN(v)){log('Enter the 0m RSSI (read from nRF Connect) first','log-warn');return;}
-  $('sMp').value=v;
-  log(`Measured Power (0m) = ${v} dBm - click Write slot to save`,'log-ok');
-};
 const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
 
 async function selectSlot(n){curSlot=n;markTab();
