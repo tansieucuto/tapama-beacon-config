@@ -6,7 +6,7 @@
 <title>Tapama Beacon Configurator</title>
 <style>
   :root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--line:#2b2b2b;
-    --txt:#e9e9e9;--muted:#8c8c8c;--accent:#c8c8c8;--warn:#e0b050;}
+    --txt:#e9e9e9;--muted:#8c8c8c;--accent:#c8c8c8;--warn:#e0b050;--ok:#7fc97f;}
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
        background:var(--bg);color:var(--txt);line-height:1.5}
@@ -19,9 +19,9 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
   .card h2{font-size:14px;margin:0 0 14px;color:#cfcfcf;text-transform:uppercase;letter-spacing:.5px}
   label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-  input,select{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
+  input,select,textarea{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
         border-radius:8px;color:var(--txt);font-size:14px;font-family:inherit}
-  input:focus,select:focus{outline:none;border-color:#6a6a6a}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#6a6a6a}
   .row{display:flex;gap:12px;flex-wrap:wrap}
   .row>div{flex:1;min-width:140px}
   .chk{display:flex;align-items:center;gap:8px;margin-top:12px}
@@ -32,13 +32,13 @@
   button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
   button.sec:hover{background:#262626}
   button.danger{background:var(--panel2);color:#cfcfcf;border:1px solid #3a3a3a}
-  button.tiny{padding:5px 9px;font-size:12px}
   button:disabled{opacity:.4;cursor:not-allowed}
   .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
   .hidden{display:none}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
   .hint{font-size:11px;color:var(--muted);margin-top:4px}
   .warn{color:var(--warn)}
+  .ok{color:var(--ok)}
   .fixedbadge{display:inline-block;padding:9px 11px;background:#1c1c1c;border:1px solid var(--line);
        border-radius:8px;color:#cfcfcf;font-family:ui-monospace,monospace;font-size:14px;width:100%}
   #log{background:#000;border:1px solid var(--line);border-radius:8px;padding:12px;height:150px;
@@ -52,14 +52,18 @@
   .est div{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);
        border-radius:8px;padding:10px}
   .est b{display:block;font-size:18px;color:#fff}
+  .bar{height:10px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
+  .bar>div{height:100%;width:0;background:var(--accent);transition:width .15s}
+  .banner{padding:10px 12px;border-radius:8px;background:#2a2410;border:1px solid #4a3f1a;color:var(--warn);font-size:13px;margin-top:10px}
 </style>
 </head>
 <body>
 <header>
-  <h1>📡 Tapama Beacon Configurator</h1>
+  <h1>Tapama Beacon Configurator</h1>
   <span id="status" class="pill">Not connected</span>
   <span id="fwver" class="pill hidden"></span>
-  <span id="authpill" class="pill hidden">🔒 Locked</span>
+  <span id="sessionPill" class="pill hidden"></span>
+  <span id="authpill" class="pill hidden">Locked</span>
   <div style="margin-left:auto"></div>
   <button id="btnConnect">Connect</button>
   <button id="btnScanAll" class="sec">Scan all</button>
@@ -71,26 +75,44 @@
     <h2>Unlock</h2>
     <label>Device password</label>
     <input id="passInput" type="password" value="0000" autocomplete="off">
-    <div class="hint">Challenge-response: app reads a nonce, sends SHA-256(password ‖ nonce). Password is never sent in clear.</div>
-    <div class="btnbar"><button id="btnUnlock">🔓 Unlock</button></div>
+    <div class="hint">Challenge-response: the app reads a nonce and sends SHA-256(password + nonce). The password is never sent in clear text.</div>
+    <div class="btnbar"><button id="btnUnlock">Unlock</button></div>
   </div>
 
   <div class="card hidden" id="cardGen">
     <h2>General Configuration</h2>
     <label>Device name (max 29 chars)</label>
     <input id="genName" maxlength="29">
-    <label>Change password (blank = keep)</label>
-    <input id="genPass" type="text" maxlength="32" placeholder="••••">
+    <label>Change password (leave blank to keep)</label>
+    <input id="genPass" type="text" maxlength="32" placeholder="">
     <div class="chk"><input id="genPwReq" type="checkbox"><label style="margin:0">Require password on connect</label></div>
     <div class="chk"><input id="genConn" type="checkbox"><label style="margin:0">Connectable (config mode)</label></div>
     <div class="hint">Connectable is RAM-only and resets to ON at every power-up. Turn OFF to ship a pure non-connectable beacon; power-cycle the device to make it connectable again.</div>
-    <div class="hint">BLE address is fixed (factory FICR address of the chip) and cannot be changed.</div>
-
+    <div class="hint">The BLE address is fixed (the chip's factory FICR address) and cannot be changed.</div>
     <div class="btnbar">
       <button id="btnGenApply">Apply (RAM)</button>
-      <button id="btnSave" class="sec">💾 Save to Flash</button>
-      <button id="btnReboot" class="sec">↻ Reboot</button>
-      <button id="btnFactory" class="danger">⚠ Factory Reset</button>
+      <button id="btnSave" class="sec">Save to Flash</button>
+      <button id="btnReboot" class="sec">Reboot</button>
+      <button id="btnFactory" class="danger">Factory Reset</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="cardFw">
+    <h2>Firmware Update</h2>
+    <div class="row">
+      <div>Current<b id="fwCurrent" style="display:block;font-size:16px;color:#fff">-</b></div>
+      <div>Latest available<b id="fwLatest" style="display:block;font-size:16px;color:#fff">-</b></div>
+    </div>
+    <div class="btnbar">
+      <button id="btnCheckFw" class="sec">Check for updates</button>
+      <button id="btnUpdateFw" class="hidden">Update now</button>
+      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">Update from file<input id="fwFile" type="file" accept=".bin" style="display:none"></label>
+    </div>
+    <div id="fwNotes" class="hint"></div>
+    <div id="fwProgressWrap" class="hidden">
+      <div class="banner">Update in progress. Do NOT lock the screen, switch apps, or turn off Bluetooth until it finishes. The device will reboot automatically when done.</div>
+      <div class="bar"><div id="fwBar"></div></div>
+      <div class="hint" id="fwPct">0%</div>
     </div>
   </div>
 
@@ -99,50 +121,50 @@
     <div class="slots" id="slotTabs"></div>
     <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
     <div class="row">
-      <div><label>Advertising interval (ms, 20–10000)</label><input id="sInt" type="number" min="20" max="10000" value="100"></div>
+      <div><label>Advertising interval (ms, 20-10000)</label><input id="sInt" type="number" min="20" max="10000" value="100"></div>
       <div><label>Measured Power @0m (dBm)</label><input id="sMp" type="number" min="-128" max="20" value="-18"></div>
     </div>
     <div class="row">
       <div><label>TX Power (dBm, radio)</label><select id="sTx"></select></div>
       <div><label>PHY</label><select id="sPhy">
         <option value="0">1M (legacy, max compatibility)</option>
-        <option value="1">2M (extended — poor scanner support)</option>
+        <option value="1">2M (extended - poor scanner support)</option>
         <option value="2">Coded / Long range (extended)</option>
       </select></div>
     </div>
     <div class="hint warn" id="phyWarn"></div>
 
     <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
-      <label style="margin-top:0">📐 Calibrate Measured Power (at 0 m)</label>
-      <div class="hint">1. Mở nRF Connect, đặt điện thoại sát beacon (~0 m). 2. Đọc RSSI (dBm) của thiết bị này. 3. Nhập vào ô dưới → Apply → bấm "Write slot" để lưu. Firmware tự quy đổi: iBeacon dùng giá trị −41 dB, Eddystone dùng thẳng.</div>
+      <label style="margin-top:0">Calibrate Measured Power (at 0 m)</label>
+      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Enter it below, click Apply, then Write slot. The firmware converts automatically: iBeacon uses value -41 dB, Eddystone uses it directly.</div>
       <div class="row" style="margin-top:8px">
-        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, vd -22"></div>
-        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply → Measured Power</button></div>
+        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, e.g. -22"></div>
+        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply to Measured Power</button></div>
       </div>
     </div>
 
     <label>Frame Type</label>
     <select id="sFrame">
-      <option value="1">1 — iBeacon</option>
-      <option value="2">2 — Eddystone-URL</option>
-      <option value="3">3 — Eddystone-UID</option>
-      <option value="4">4 — Eddystone-TLM (auto-generated)</option>
-      <option value="5">5 — Custom (Manufacturer Data)</option>
-      <option value="6">6 — Raw AD (advanced)</option>
+      <option value="1">1 - iBeacon</option>
+      <option value="2">2 - Eddystone-URL</option>
+      <option value="3">3 - Eddystone-UID</option>
+      <option value="4">4 - Eddystone-TLM (auto-generated)</option>
+      <option value="5">5 - Custom (Manufacturer Data)</option>
+      <option value="6">6 - Raw AD (advanced)</option>
     </select>
 
     <div id="fIbeacon" class="frameBox">
       <label>UUID (32 hex)</label>
       <input id="ibUuid" class="mono" maxlength="47" value="18ee1516-016b-4bec-ad96-bcb96d166e97">
       <div class="row">
-        <div><label>Major (0–65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
-        <div><label>Minor (0–65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
+        <div><label>Major (0-65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
+        <div><label>Minor (0-65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
       </div>
     </div>
 
     <div id="fUrl" class="frameBox hidden">
       <label>URL</label><input id="urlVal" value="https://www.nordicsemi.com">
-      <div class="hint">Encodes scheme + suffix per Eddystone spec, max 17 bytes after the scheme.</div>
+      <div class="hint">Encodes scheme + suffix per the Eddystone spec, max 17 bytes after the scheme.</div>
     </div>
 
     <div id="fUid" class="frameBox hidden">
@@ -153,36 +175,36 @@
     </div>
 
     <div id="fTlm" class="frameBox hidden">
-      <div class="hint">TLM auto-generated: VDD voltage, die temperature, adv counter, uptime.</div>
+      <div class="hint">TLM is auto-generated: VDD voltage, die temperature, advertising counter, uptime.</div>
     </div>
 
     <div id="fCustom" class="frameBox hidden">
       <div class="row">
         <div><label>Company ID (hex, LE on air)</label><input id="cCompany" class="mono" maxlength="4" value="5054"></div>
       </div>
-      <label>Payload (hex, max 29 bytes — after company ID)</label>
+      <label>Payload (hex, max 29 bytes - after company ID)</label>
       <input id="cData" class="mono" value="010203deadbeef">
       <div class="hint">AD type 0xFF (Manufacturer Specific Data). Default company 0x5054 = Tapama.</div>
     </div>
 
     <div id="fRaw" class="frameBox hidden">
-      <label>Raw AD bytes (hex) — full [len][type][data] blocks, max 31 bytes total</label>
+      <label>Raw AD bytes (hex) - full [len][type][data] blocks, max 31 bytes total</label>
       <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5">
       <div class="btnbar">
-        <button class="sec tiny" id="rawTplIbeacon">Insert iBeacon template</button>
-        <button class="sec tiny" id="rawTplFlags">Insert flags 020106</button>
+        <button class="sec" id="rawTplIbeacon">Insert iBeacon template</button>
+        <button class="sec" id="rawTplFlags">Insert flags 020106</button>
       </div>
-      <div class="hint warn">Advanced: you build the entire AD yourself. Malformed lengths = the slot won't advertise. Spaces are ignored.</div>
+      <div class="hint warn">Advanced: you build the entire AD yourself. Malformed lengths mean the slot will not advertise. Spaces are ignored.</div>
     </div>
 
     <div class="btnbar">
-      <button id="btnReadSlot" class="sec">⭯ Re-read slot</button>
-      <button id="btnWriteSlot">✍ Write slot</button>
+      <button id="btnReadSlot" class="sec">Re-read slot</button>
+      <button id="btnWriteSlot">Write slot</button>
     </div>
   </div>
 
   <div class="card hidden" id="cardEst">
-    <h2>Battery &amp; Estimate</h2>
+    <h2>Battery and Estimate</h2>
     <div class="row">
       <div><label>Battery type (coin cell holder)</label>
         <select id="pinType">
@@ -191,30 +213,30 @@
         </select>
       </div>
       <div style="display:flex;align-items:flex-end">
-        <button id="btnRefreshEst" class="sec" style="width:100%">⭯ Refresh reading</button>
+        <button id="btnRefreshEst" class="sec" style="width:100%">Refresh reading</button>
       </div>
     </div>
     <div class="est" style="margin-top:14px">
-      <div>Battery voltage<b id="estVolt">—</b></div>
-      <div>Battery level<b id="estPct">—</b></div>
-      <div>Avg current<b id="estCur">—</b></div>
-      <div>Est. remaining<b id="estLife">—</b></div>
+      <div>Battery voltage<b id="estVolt">-</b></div>
+      <div>Battery level<b id="estPct">-</b></div>
+      <div>Avg current<b id="estCur">-</b></div>
+      <div>Est. remaining<b id="estLife">-</b></div>
     </div>
-    <div class="hint">Voltage is read live from the device (chip VDD). Level maps 3.0 V = 100%, 2.0 V = 0% (3 V lithium). Remaining time = (level × capacity) ÷ estimated current — a "good enough" figure, not a measured one. Assumes the cell powers the nRF directly (no regulator). For exact figures use a power profiler.</div>
+    <div class="hint">Voltage is read live from the device (chip VDD). Level maps 3.0 V = 100%, 2.0 V = 0% (3 V lithium). Remaining time = (level x capacity) / estimated current, a rough figure only. Assumes the cell powers the nRF directly. For exact numbers use a power profiler.</div>
   </div>
 
   <div class="card hidden" id="cardProfile">
     <h2>Config Profile (Clone / Provision)</h2>
-    <div class="hint">Export toàn bộ cấu hình (general + cả 6 slot) thành một profile, rồi import sang máy khác để nhân bản hàng loạt. <b>Password KHÔNG được xuất</b> — mỗi máy giữ pass riêng.</div>
+    <div class="hint">Export the full configuration (general + all 6 slots) as a portable profile, then import it onto other devices for fleet provisioning. The password is NOT included; each device keeps its own.</div>
     <div class="btnbar">
-      <button id="btnExport">⬇ Export current config</button>
-      <button id="btnExportFile" class="sec">💾 Download file</button>
-      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">📂 Load file<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
+      <button id="btnExport">Export current config</button>
+      <button id="btnExportFile" class="sec">Download file</button>
+      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">Load file<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
     </div>
-    <label>Profile JSON (dán vào đây để import, hoặc sửa tay)</label>
-    <textarea id="profileText" class="mono" style="width:100%;height:120px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:10px;font-size:12px;resize:vertical" placeholder='{"tapama":"cfg",...}'></textarea>
-    <div class="chk"><input id="importSave" type="checkbox" checked><label style="margin:0">Save to flash sau khi import</label></div>
-    <div class="btnbar"><button id="btnImport">⬆ Import vào máy này</button></div>
+    <label>Profile JSON (paste here to import, or edit)</label>
+    <textarea id="profileText" class="mono" style="height:120px;resize:vertical" placeholder='{"tapama":"cfg",...}'></textarea>
+    <div class="chk"><input id="importSave" type="checkbox" checked><label style="margin:0">Save to flash after import</label></div>
+    <div class="btnbar"><button id="btnImport">Import to this device</button></div>
   </div>
 
   <div class="card"><h2>Log</h2><div id="log"></div></div>
@@ -229,12 +251,18 @@ const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_BAT ='e7a10006-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_VER ='e7a10007-9b6a-4c2e-9f1d-2b3c4d5e6f70';
-const PIN_CAP={CR2450:620,CR2477:1000}; // mAh
+// mcumgr SMP service (appears only after the DFU-enable command 0x04)
+const SMP_SVC='8d53dc1d-1db7-4cd3-868b-8a527460aa84';
+const SMP_CHR='da2e7828-fbce-4e01-ae9e-261174997c48';
 const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
+const SESSION_SECONDS=180;
+const PIN_CAP={CR2450:620,CR2477:1000};
+const MANIFEST_URL='firmware.json'; // hosted next to this page
 
 let device,server,chars={},curSlot=0;
 let devInfo={};
+let sessionTimer=null,sessionLeft=SESSION_SECONDS;
 const slotCache=Array.from({length:6},()=>null);
 
 const $=id=>document.getElementById(id);
@@ -254,10 +282,18 @@ function encodeUrl(url){let sc=-1;for(let i=0;i<URL_SCHEMES.length;i++)if(url.st
   if(out.length>17)throw new Error('URL too long (>17 bytes encoded)');return{scheme:sc,bytes:Uint8Array.from(out)};}
 function decodeUrl(sc,bytes){let s=URL_SCHEMES[sc]||'';for(const b of bytes)s+=(b<URL_SUFFIX.length)?URL_SUFFIX[b]:String.fromCharCode(b);return s;}
 
+// ---- session countdown ----
+function updateSessionUI(){const m=Math.floor(sessionLeft/60),s=sessionLeft%60;
+  $('sessionPill').textContent=`Session ${m}:${String(s).padStart(2,'0')}`;
+  $('sessionPill').classList.remove('hidden');}
+function startSession(){sessionLeft=SESSION_SECONDS;updateSessionUI();clearInterval(sessionTimer);
+  sessionTimer=setInterval(()=>{sessionLeft--;if(sessionLeft<=0){sessionLeft=0;updateSessionUI();clearInterval(sessionTimer);}else updateSessionUI();},1000);}
+function stopSession(msg){clearInterval(sessionTimer);if(msg){$('sessionPill').textContent=msg;$('sessionPill').classList.remove('hidden');}else $('sessionPill').classList.add('hidden');}
+
 // ---- connect ----
 async function finishConnect(){
   device.addEventListener('gattserverdisconnected',onDisc);
-  log('Connecting GATT…');server=await device.gatt.connect();
+  log('Connecting GATT...');server=await device.gatt.connect();
   const svc=await server.getPrimaryService(SVC);
   chars.auth=await svc.getCharacteristic(C_AUTH);
   chars.gen =await svc.getCharacteristic(C_GEN);
@@ -272,36 +308,43 @@ async function finishConnect(){
     const feat=v[6]|(v[7]<<8);
     devInfo={fw:fw.slice(1),slots:v[3],maxFrame:v[4],cfgVer:v[5],feat:feat};
     $('fwver').textContent='FW '+fw;$('fwver').classList.remove('hidden');
-    log(`Firmware ${fw} — slots=${v[3]} maxFrame=${v[4]} cfgVer=${v[5]} feat=0x${feat.toString(16)}`,'log-ok');
+    $('fwCurrent').textContent=fw;
+    log(`Firmware ${fw} - slots=${v[3]} maxFrame=${v[4]} cfgVer=${v[5]} feat=0x${feat.toString(16)}`,'log-ok');
   }catch(e){chars.ver=null;log('No version characteristic (older firmware)','log-warn');}
   $('status').textContent=device.name||'Connected';$('status').classList.add('on');
   $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
   $('btnDisconnect').classList.remove('hidden');$('cardAuth').classList.remove('hidden');
   $('authpill').classList.remove('hidden');
-  log('Connected ✔ — please unlock','log-ok');
+  log('Connected - please unlock','log-ok');
 }
-$('btnConnect').onclick=async()=>{try{log('Scanning by service UUID…');
-  device=await navigator.bluetooth.requestDevice({filters:[{services:[SVC]}],optionalServices:[SVC]});await finishConnect();}
+function reqOpts(all){
+  const base={optionalServices:[SVC,SMP_SVC]};
+  if(all){base.acceptAllDevices=true;}else{base.filters=[{services:[SVC]}];}
+  return base;
+}
+$('btnConnect').onclick=async()=>{try{log('Scanning by service UUID...');
+  device=await navigator.bluetooth.requestDevice(reqOpts(false));await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
-$('btnScanAll').onclick=async()=>{try{log('Scanning ALL — pick "Tapama"…');
-  device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SVC]});await finishConnect();}
+$('btnScanAll').onclick=async()=>{try{log('Scanning all devices - pick "Tapama"...');
+  device=await navigator.bluetooth.requestDevice(reqOpts(true));await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
-function onDisc(){log('Device disconnected','log-warn');
+function onDisc(){log('Device disconnected','log-warn');stopSession();
   $('status').textContent='Not connected';$('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
-  ['btnDisconnect','cardAuth','cardGen','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
+  ['btnDisconnect','cardAuth','cardGen','cardFw','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
 $('btnDisconnect').onclick=()=>{if(device&&device.gatt.connected)device.gatt.disconnect();};
 
 // ---- unlock ----
 $('btnUnlock').onclick=async()=>{try{
-  log('Reading nonce…');const nonce=new Uint8Array((await chars.auth.readValue()).buffer);
+  log('Reading nonce...');const nonce=new Uint8Array((await chars.auth.readValue()).buffer);
   log('nonce = '+bytesToHex(nonce));
   const pass=new TextEncoder().encode($('passInput').value);
   const comb=new Uint8Array(pass.length+nonce.length);comb.set(pass,0);comb.set(nonce,pass.length);
   const hash=await crypto.subtle.digest('SHA-256',comb);
   await writeChar(chars.auth,new Uint8Array(hash));
-  log('Unlocked 🔓','log-ok');$('authpill').textContent='🔓 Unlocked';$('authpill').classList.add('on');
-  $('cardGen').classList.remove('hidden');$('cardSlot').classList.remove('hidden');$('cardEst').classList.remove('hidden');$('cardProfile').classList.remove('hidden');
+  log('Unlocked','log-ok');$('authpill').textContent='Unlocked';$('authpill').classList.add('on');
+  ['cardGen','cardFw','cardSlot','cardEst','cardProfile'].forEach(id=>$(id).classList.remove('hidden'));
+  startSession();
   await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
 }catch(e){log('Unlock failed (wrong password?): '+e.message,'log-err');}};
 
@@ -326,19 +369,18 @@ function buildGenWrite(){
   return Uint8Array.from(buf);
 }
 $('btnGenApply').onclick=async()=>{try{await writeChar(chars.gen,buildGenWrite());
-  log('General applied ✔','log-ok');$('genPass').value='';await readGeneral();}
+  log('General applied','log-ok');$('genPass').value='';await readGeneral();}
   catch(e){log('Failed to write general: '+e.message,'log-err');}};
 $('btnSave').onclick   =()=>sendCmd(0x01,'Save to flash');
 $('btnReboot').onclick =()=>sendCmd(0x02,'Reboot');
 $('btnFactory').onclick=()=>{if(confirm('Erase all config and restore defaults?'))sendCmd(0x03,'Factory reset');};
-async function sendCmd(code,name){try{await writeChar(chars.cmd,Uint8Array.of(code));log(name+' — sent ✔','log-ok');}
+async function sendCmd(code,name){try{await writeChar(chars.cmd,Uint8Array.of(code));log(name+' - sent','log-ok');}
   catch(e){log('Command error ('+name+'): '+e.message,'log-err');}}
 
 // ---- slots ----
 function buildSlotTabs(){const t=$('slotTabs');t.innerHTML='';for(let i=0;i<6;i++){
   const b=document.createElement('button');b.textContent=i;b.onclick=()=>selectSlot(i);t.appendChild(b);}}
 function markTab(){document.querySelectorAll('#slotTabs button').forEach((b,i)=>b.classList.toggle('active',i===curSlot));}
-
 function showFrame(ft){
   ['fIbeacon','fUrl','fUid','fTlm','fCustom','fRaw'].forEach(x=>$(x).classList.add('hidden'));
   const map={1:'fIbeacon',2:'fUrl',3:'fUid',4:'fTlm',5:'fCustom',6:'fRaw'};
@@ -349,7 +391,7 @@ function updatePhyWarn(){
   const phy=parseInt($('sPhy').value,10), ft=parseInt($('sFrame').value,10);
   let w='';
   if(phy===1) w='2M-only advertising is invisible to almost all phones/scanners. Use only for 2M-capable receivers.';
-  else if(phy===2) w='Coded/Long-range uses Extended advertising — many phone apps and Web Bluetooth scanners cannot see it.';
+  else if(phy===2) w='Coded/Long-range uses Extended advertising - many phone apps and Web Bluetooth scanners cannot see it.';
   if(phy!==0 && (ft===1||ft===2||ft===3||ft===4))
     w+=(w?' ':'')+'iBeacon/Eddystone scanners expect legacy 1M; on extended PHY standard apps will NOT decode this frame.';
   $('phyWarn').textContent=w;
@@ -358,11 +400,10 @@ $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
 $('sPhy').onchange=updatePhyWarn;
 $('btnCalib').onclick=()=>{
   const v=parseInt($('calibRssi').value,10);
-  if(isNaN(v)){log('Nhập RSSI @0m (đọc từ nRF Connect) trước','log-warn');return;}
+  if(isNaN(v)){log('Enter the 0m RSSI (read from nRF Connect) first','log-warn');return;}
   $('sMp').value=v;
-  log(`Measured Power (0m) = ${v} dBm — bấm "Write slot" để lưu`,'log-ok');
+  log(`Measured Power (0m) = ${v} dBm - click Write slot to save`,'log-ok');
 };
-
 const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
 
 async function selectSlot(n){curSlot=n;markTab();
@@ -379,7 +420,7 @@ async function readSlot(){
   $('sMp').value=s8(b[3]);
   $('sTx').value=s8(b[4]);
   const ft=b[5];$('sFrame').value=ft;$('sPhy').value=b[6];showFrame(ft);
-  const u=b.slice(8); // 32-byte union
+  const u=b.slice(8);
   if(ft===1){
     $('ibUuid').value=formatUuid(bytesToHex(u.slice(0,16)));
     $('ibMajor').value=u[16]|(u[17]<<8);$('ibMinor').value=u[18]|(u[19]<<8);
@@ -405,7 +446,7 @@ function buildSlotWrite(){
   buf[4]=u8(parseInt($('sTx').value,10)||0);
   const ft=parseInt($('sFrame').value,10);buf[5]=ft;
   buf[6]=parseInt($('sPhy').value,10);
-  buf[7]=0; // reserved
+  buf[7]=0;
   const u=new Uint8Array(32);
   if(ft===1){
     const uuid=hexToBytes($('ibUuid').value);
@@ -437,11 +478,15 @@ function buildSlotWrite(){
 $('btnWriteSlot').onclick=async()=>{try{
   const data=buildSlotWrite();await writeChar(chars.slot,data);
   slotCache[curSlot]=data;
-  log(`Slot ${curSlot} written ✔ (${bytesToHex(data)})`,'log-ok');
+  log(`Slot ${curSlot} written (${bytesToHex(data)})`,'log-ok');
   await refreshEstimate();
 }catch(e){log('Failed to write slot: '+e.message,'log-err');}};
 
-// ============ config profile (clone / provision) ============
+$('rawTplIbeacon').onclick=()=>{$('rawData').value=
+  '0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5';updatePhyWarn();};
+$('rawTplFlags').onclick=()=>{$('rawData').value='020106';};
+
+// ---- config profile (clone / provision) ----
 async function readSlotRaw(n){
   await writeChar(chars.sel,Uint8Array.of(n));
   return new Uint8Array((await chars.slot.readValue()).buffer);
@@ -456,7 +501,7 @@ async function buildProfile(){
   return {tapama:'cfg',v:devInfo.cfgVer||0,fw:devInfo.fw||'?',name,pwreq,conn,slots};
 }
 $('btnExport').onclick=async()=>{
-  try{$('profileText').value=JSON.stringify(await buildProfile());log('Config exported ✔ — copy chuỗi JSON','log-ok');}
+  try{$('profileText').value=JSON.stringify(await buildProfile());log('Config exported - copy the JSON','log-ok');}
   catch(e){log('Export failed: '+e.message,'log-err');}
 };
 $('btnExportFile').onclick=async()=>{
@@ -464,45 +509,41 @@ $('btnExportFile').onclick=async()=>{
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([s],{type:'application/json'}));
     a.download=`tapama-${(p.name||'beacon').replace(/[^\w-]/g,'_')}.json`;a.click();
-    URL.revokeObjectURL(a.href);$('profileText').value=s;log('Config downloaded ✔','log-ok');}
+    URL.revokeObjectURL(a.href);$('profileText').value=s;log('Config downloaded','log-ok');}
   catch(e){log('Export failed: '+e.message,'log-err');}
 };
 $('importFile').onchange=(e)=>{
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{$('profileText').value=r.result;log('File loaded — kiểm tra rồi bấm Import','log-ok');};
+  r.onload=()=>{$('profileText').value=r.result;log('File loaded - review then Import','log-ok');};
   r.readAsText(f);e.target.value='';
 };
 $('btnImport').onclick=async()=>{
   let p;
-  try{p=JSON.parse($('profileText').value);}catch(e){log('JSON không hợp lệ','log-err');return;}
-  if(p.tapama!=='cfg'||!Array.isArray(p.slots)){log('Không phải profile Tapama','log-err');return;}
-  if(p.slots.length!==6){log(`Profile có ${p.slots.length} slot, cần 6`,'log-err');return;}
+  try{p=JSON.parse($('profileText').value);}catch(e){log('Invalid JSON','log-err');return;}
+  if(p.tapama!=='cfg'||!Array.isArray(p.slots)){log('Not a Tapama profile','log-err');return;}
+  if(p.slots.length!==6){log(`Profile has ${p.slots.length} slots, expected 6`,'log-err');return;}
   if(devInfo.cfgVer&&p.v&&p.v!==devInfo.cfgVer&&
-     !confirm(`Profile cfgVersion ${p.v} khác device ${devInfo.cfgVer}. Layout có thể khác. Import tiếp?`)) return;
+     !confirm(`Profile cfgVersion ${p.v} differs from device ${devInfo.cfgVer}. Layout may differ. Import anyway?`)) return;
   try{
     const name=new TextEncoder().encode((p.name||'').slice(0,29));
     const gbuf=[p.pwreq?1:0,p.conn?1:0,name.length];name.forEach(x=>gbuf.push(x));gbuf.push(0);
     await writeChar(chars.gen,Uint8Array.from(gbuf));
     for(let i=0;i<6;i++){
       const blob=hexToBytes(p.slots[i]);
-      if(blob.length!==40){log(`Slot ${i} sai độ dài (${blob.length}), bỏ qua`,'log-warn');continue;}
+      if(blob.length!==40){log(`Slot ${i} bad length (${blob.length}), skipped`,'log-warn');continue;}
       await writeChar(chars.sel,Uint8Array.of(i));
       await writeChar(chars.slot,blob);
     }
-    log('Profile imported vào RAM ✔','log-ok');
+    log('Profile imported to RAM','log-ok');
     if($('importSave').checked) await sendCmd(0x01,'Save to flash');
     slotCache.fill(null);await readGeneral();await selectSlot(0);await refreshEstimate();
   }catch(e){log('Import failed: '+e.message,'log-err');}
 };
-// raw templates
-$('rawTplIbeacon').onclick=()=>{$('rawData').value=
-  '0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5';updatePhyWarn();};
-$('rawTplFlags').onclick=()=>{$('rawData').value='020106';};
 
-// ---- battery estimate (rough, clearly labelled) ----
+// ---- battery estimate ----
 function eventCharge(txDbm,phy){
-  let q=6; // µC per event @0dBm, 1M (very rough)
+  let q=6;
   if(phy===2)q*=6; else if(phy===1)q*=0.7;
   const txmw=Math.pow(10,txDbm/10);
   q*=(1+0.04*txmw);
@@ -517,35 +558,26 @@ async function readAllSlots(){
   }
   await writeChar(chars.sel,Uint8Array.of(keep));curSlot=keep;markTab();
 }
-function fmtDuration(days){
-  if(!isFinite(days)||days<=0) return '—';
-  return days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
-}
 async function readBattery(){
   if(!chars.bat) return null;
   try{const dv=await chars.bat.readValue();return dv.getUint16(0,true);}catch(e){return null;}
 }
+function fmtDuration(days){
+  if(!isFinite(days)||days<=0) return '-';
+  return days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
+}
 async function refreshEstimate(){
   try{await readAllSlots();}catch(e){return;}
-
-  // average current from currently-enabled slots
-  let cur=3; // µA sleep baseline
+  let cur=3;
   for(let i=0;i<6;i++){const b=slotCache[i];if(!b||!b[0])continue;
     const int=b[1]|(b[2]<<8),tx=s8(b[4]),phy=b[6];
     cur+=(1000/int)*eventCharge(tx,phy);}
-  $('estCur').textContent=cur.toFixed(0)+' µA';
-
-  // live battery voltage -> level -> remaining time
+  $('estCur').textContent=cur.toFixed(0)+' uA';
   const mv=await readBattery();
-  if(mv===null||mv===0){
-    $('estVolt').textContent='n/a';$('estPct').textContent='n/a';
-    $('estLife').textContent='n/a';return;
-  }
+  if(mv===null||mv===0){$('estVolt').textContent='n/a';$('estPct').textContent='n/a';$('estLife').textContent='n/a';return;}
   const pct=Math.max(0,Math.min(100,(mv-2000)/(3000-2000)*100));
-  const cap=PIN_CAP[$('pinType').value]||620;          // mAh
-  const remMah=(pct/100)*cap;
-  const avgMa=cur/1000;
-  const days=(remMah/avgMa)/24;
+  const cap=PIN_CAP[$('pinType').value]||620;
+  const days=((pct/100)*cap/(cur/1000))/24;
   $('estVolt').textContent=mv+' mV';
   $('estPct').textContent=pct.toFixed(0)+' %';
   $('estLife').textContent=fmtDuration(days);
@@ -553,10 +585,152 @@ async function refreshEstimate(){
 $('btnRefreshEst').onclick=refreshEstimate;
 $('pinType').onchange=refreshEstimate;
 
+// ============ Firmware update (SMP over Web Bluetooth) ============
+function cmpVer(a,b){const pa=String(a).split('.').map(Number),pb=String(b).split('.').map(Number);
+  for(let i=0;i<3;i++){const d=(pa[i]||0)-(pb[i]||0);if(d)return d;}return 0;}
+let latestManifest=null;
+$('btnCheckFw').onclick=async()=>{
+  try{
+    log('Checking for updates...');
+    const r=await fetch(MANIFEST_URL,{cache:'no-store'});
+    if(!r.ok)throw new Error('manifest HTTP '+r.status);
+    latestManifest=await r.json();
+    $('fwLatest').textContent='v'+latestManifest.version;
+    $('fwNotes').textContent=latestManifest.notes||'';
+    const newer=cmpVer(latestManifest.version,devInfo.fw||'0')>0;
+    if(newer){$('btnUpdateFw').classList.remove('hidden');
+      log(`Update available: v${latestManifest.version} (current v${devInfo.fw})`,'log-ok');}
+    else{$('btnUpdateFw').classList.add('hidden');
+      log('Firmware is up to date','log-ok');}
+  }catch(e){log('Update check failed: '+e.message,'log-err');}
+};
+$('btnUpdateFw').onclick=async()=>{
+  if(!latestManifest){log('Check for updates first','log-warn');return;}
+  try{
+    log('Downloading '+latestManifest.file+' ...');
+    const r=await fetch(latestManifest.file,{cache:'no-store'});
+    if(!r.ok)throw new Error('firmware HTTP '+r.status);
+    const buf=await r.arrayBuffer();
+    await doOTA(new Uint8Array(buf));
+  }catch(e){log('Update failed: '+e.message,'log-err');otaFail();}
+};
+$('fwFile').onchange=async(e)=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const buf=await f.arrayBuffer();await doOTA(new Uint8Array(buf));}
+  catch(err){log('Update failed: '+err.message,'log-err');otaFail();}
+};
+function otaProgress(done,total){const p=Math.floor(done/total*100);
+  $('fwBar').style.width=p+'%';$('fwPct').textContent=p+'% ('+done+'/'+total+' bytes)';}
+function otaFail(){$('fwProgressWrap').classList.add('hidden');}
+
+// minimal CBOR encode (map/uint/bstr/tstr/bool)
+function cborEncode(obj){
+  const out=[];
+  function head(major,val){
+    if(val<24)out.push((major<<5)|val);
+    else if(val<256)out.push((major<<5)|24,val);
+    else if(val<65536)out.push((major<<5)|25,(val>>8)&0xff,val&0xff);
+    else out.push((major<<5)|26,(val>>>24)&0xff,(val>>16)&0xff,(val>>8)&0xff,val&0xff);
+  }
+  function enc(v){
+    if(typeof v==='number'){if(v>=0)head(0,v);else head(1,-v-1);}
+    else if(typeof v==='boolean')out.push(v?0xf5:0xf4);
+    else if(v instanceof Uint8Array){head(2,v.length);for(const b of v)out.push(b);}
+    else if(typeof v==='string'){const u=new TextEncoder().encode(v);head(3,u.length);for(const b of u)out.push(b);}
+    else if(v&&typeof v==='object'){const k=Object.keys(v);head(5,k.length);for(const key of k){enc(key);enc(v[key]);}}
+  }
+  enc(obj);return new Uint8Array(out);
+}
+// minimal CBOR decode
+function cborDecode(u8){
+  let i=0;
+  function read(){
+    const b=u8[i++],major=b>>5,info=b&0x1f;let val=info;
+    if(info===24)val=u8[i++];
+    else if(info===25){val=(u8[i]<<8)|u8[i+1];i+=2;}
+    else if(info===26){val=((u8[i]<<24)|(u8[i+1]<<16)|(u8[i+2]<<8)|u8[i+3])>>>0;i+=4;}
+    switch(major){
+      case 0:return val;
+      case 1:return -val-1;
+      case 2:{const s=u8.slice(i,i+val);i+=val;return s;}
+      case 3:{const s=new TextDecoder().decode(u8.slice(i,i+val));i+=val;return s;}
+      case 4:{const a=[];for(let k=0;k<val;k++)a.push(read());return a;}
+      case 5:{const o={};for(let k=0;k<val;k++){const key=read();o[key]=read();}return o;}
+      case 7:{if(info===20)return false;if(info===21)return true;return null;}
+    }
+  }
+  return read();
+}
+function smpFrame(op,group,id,seq,payload){
+  const h=new Uint8Array(8+payload.length);
+  h[0]=op;h[1]=0;h[2]=(payload.length>>8)&0xff;h[3]=payload.length&0xff;
+  h[4]=(group>>8)&0xff;h[5]=group&0xff;h[6]=seq;h[7]=id;
+  h.set(payload,8);return h;
+}
+let smpChar=null,smpResolve=null,smpReject=null,smpBuf=new Uint8Array(0);
+function smpOnNotify(e){
+  const v=new Uint8Array(e.target.value.buffer);
+  const m=new Uint8Array(smpBuf.length+v.length);m.set(smpBuf);m.set(v,smpBuf.length);smpBuf=m;
+  if(smpBuf.length>=8){const len=(smpBuf[2]<<8)|smpBuf[3];
+    if(smpBuf.length>=8+len){const payload=smpBuf.slice(8,8+len);smpBuf=new Uint8Array(0);
+      if(smpResolve){const r=smpResolve;smpResolve=smpReject=null;try{r(cborDecode(payload));}catch(err){r({});}}}}
+}
+function smpRequest(op,group,id,seq,payloadObj){
+  return new Promise((resolve,reject)=>{
+    smpResolve=resolve;smpReject=reject;smpBuf=new Uint8Array(0);
+    const frame=smpFrame(op,group,id,seq,cborEncode(payloadObj));
+    const to=setTimeout(()=>{if(smpReject){const rj=smpReject;smpResolve=smpReject=null;rj(new Error('SMP timeout'));}},15000);
+    smpChar.writeValueWithoutResponse(frame).catch(err=>{clearTimeout(to);if(smpReject){smpResolve=smpReject=null;reject(err);}});
+  });
+}
+async function doOTA(image){
+  if(!device||!device.gatt.connected){log('Connect and unlock first','log-err');return;}
+  $('fwProgressWrap').classList.remove('hidden');otaProgress(0,image.length);
+  log(`Firmware image: ${image.length} bytes`);
+  const sha=new Uint8Array(await crypto.subtle.digest('SHA-256',image));
+
+  // 1. enable DFU on the device (disables the session lock, registers SMP)
+  log('Enabling DFU mode...');
+  await writeChar(chars.cmd,Uint8Array.of(0x04));
+  stopSession('Update mode - lock off');
+  await new Promise(r=>setTimeout(r,600)); // let the service register
+
+  // 2. discover the SMP service (now present on this connection)
+  let smpSvc;
+  try{smpSvc=await server.getPrimaryService(SMP_SVC);}
+  catch(e){throw new Error('SMP service not visible. Reconnect and try again. ('+e.message+')');}
+  smpChar=await smpSvc.getCharacteristic(SMP_CHR);
+  await smpChar.startNotifications();
+  smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
+
+  // 3. upload to slot 1
+  const CHUNK=128;let off=0,seq=0;
+  log('Uploading firmware (this can take a few minutes)...');
+  while(off<image.length){
+    const data=image.slice(off,off+CHUNK);
+    const map={image:0,off:off,data:data};
+    if(off===0){map.len=image.length;map.sha=sha;}
+    const resp=await smpRequest(2,1,1,(seq++)&0xff,map);
+    if(resp&&resp.rc!==undefined&&resp.rc!==0)throw new Error('upload rc='+resp.rc);
+    off=(resp&&resp.off!==undefined)?resp.off:off+data.length;
+    otaProgress(off,image.length);
+  }
+  log('Upload complete. Marking image for test...','log-ok');
+
+  // 4. set the new image pending (test mode -> auto-revert if it fails to confirm)
+  await smpRequest(2,1,0,(seq++)&0xff,{hash:sha,confirm:false});
+
+  // 5. reset -> MCUboot swaps, the new image boots and self-confirms after 15s
+  log('Resetting device to apply update...','log-ok');
+  try{await smpRequest(2,0,5,(seq++)&0xff,{});}catch(e){}
+  log('Update sent. The device is rebooting and verifying the new firmware.','log-ok');
+  $('fwBar').style.width='100%';$('fwPct').textContent='Rebooting...';
+}
+
 // ---- init ----
 if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');}
 buildTxOptions();
-log('Ready. Click "Connect".');
+log('Ready. Click Connect.');
 </script>
 </body>
 </html>
