@@ -1,9 +1,0 @@
-{
-  "product": "tapama-beacon-x1",
-  "board": "nrf52840dk_nrf52840",
-  "version": "1.1.1",
-  "file": "tapama_beacon_1.1.1.signed.bin",
-  "size": 222434,
-  "sha256": "48ac622908015f7bb1edad18d2ca63c226541bb1f817033bbc48b3a44ff58452",
-  "notes": "Tapama Beacon OTA release"
-}
