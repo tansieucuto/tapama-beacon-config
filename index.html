@@ -689,16 +689,26 @@ async function doOTA(image){
   log(`Firmware image: ${image.length} bytes`);
   const sha=new Uint8Array(await crypto.subtle.digest('SHA-256',image));
 
-  // 1. enable DFU on the device (disables the session lock, registers SMP)
-  log('Enabling DFU mode...');
-  await writeChar(chars.cmd,Uint8Array.of(0x04));
-  stopSession('Update mode - lock off');
-  await new Promise(r=>setTimeout(r,600)); // let the service register
+await writeChar(chars.cmd, Uint8Array.of(0x04));
+stopSession('Update mode - lock off');
 
-  // 2. discover the SMP service (now present on this connection)
-  let smpSvc;
-  try{smpSvc=await server.getPrimaryService(SMP_SVC);}
-  catch(e){throw new Error('SMP service not visible. Reconnect and try again. ('+e.message+')');}
+log('DFU enabled. Reconnecting to refresh GATT services...');
+
+if (device.gatt.connected) {
+  device.gatt.disconnect();
+}
+
+await new Promise(r => setTimeout(r, 1500));
+
+server = await device.gatt.connect();
+
+let smpSvc;
+try {
+  smpSvc = await server.getPrimaryService(SMP_SVC);
+} catch (e) {
+  throw new Error('SMP service not visible after reconnect: ' + e.message);
+}
+  
   smpChar=await smpSvc.getCharacteristic(SMP_CHR);
   await smpChar.startNotifications();
   smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
