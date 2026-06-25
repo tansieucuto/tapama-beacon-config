@@ -98,22 +98,17 @@
   </div>
 
   <div class="card hidden" id="cardFw">
-    <h2>Firmware Update</h2>
+    <h2>Firmware</h2>
     <div class="row">
-      <div>Current<b id="fwCurrent" style="display:block;font-size:16px;color:#fff">-</b></div>
+      <div>Current version<b id="fwCurrent" style="display:block;font-size:16px;color:#fff">-</b></div>
       <div>Latest available<b id="fwLatest" style="display:block;font-size:16px;color:#fff">-</b></div>
     </div>
     <div class="btnbar">
       <button id="btnCheckFw" class="sec">Check for updates</button>
-      <button id="btnUpdateFw" class="hidden">Update now</button>
-      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">Update from file<input id="fwFile" type="file" accept=".bin" style="display:none"></label>
+      <a id="fwDownload" class="hidden" href="#" target="_blank" rel="noopener" style="text-decoration:none"><button>Download update</button></a>
     </div>
     <div id="fwNotes" class="hint"></div>
-    <div id="fwProgressWrap" class="hidden">
-      <div class="banner">Update in progress. Do NOT lock the screen, switch apps, or turn off Bluetooth until it finishes. The device will reboot automatically when done.</div>
-      <div class="bar"><div id="fwBar"></div></div>
-      <div class="hint" id="fwPct">0%</div>
-    </div>
+    <div class="hint" style="margin-top:8px">Install the downloaded .bin with the <b>nRF Connect Device Manager</b> app: connect to this device, open Firmware Upgrade, select the file, choose Test and Confirm, upload. No password is needed - the image is verified by digital signature, so only officially signed firmware will boot.</div>
   </div>
 
   <div class="card hidden" id="cardSlot">
@@ -135,12 +130,8 @@
     <div class="hint warn" id="phyWarn"></div>
 
     <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
-      <label style="margin-top:0">Calibrate Measured Power (at 0 m)</label>
-      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Enter it below, click Apply, then Write slot. The firmware converts automatically: iBeacon uses value -41 dB, Eddystone uses it directly.</div>
-      <div class="row" style="margin-top:8px">
-        <div><input id="calibRssi" type="number" min="-128" max="20" placeholder="RSSI @ 0m, e.g. -22"></div>
-        <div style="display:flex;align-items:flex-end"><button id="btnCalib" class="sec" style="width:100%">Apply to Measured Power</button></div>
-      </div>
+      <label style="margin-top:0">How to set Measured Power (calibrate at 0 m)</label>
+      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Type that value straight into the <b>Measured Power @0m</b> field above, then click <b>Write slot</b>. The firmware converts automatically: iBeacon subtracts 41 dB (0 m to 1 m reference), Eddystone uses the 0 m value directly.</div>
     </div>
 
     <label>Frame Type</label>
@@ -251,18 +242,15 @@ const C_SLOT='e7a10004-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_CMD ='e7a10005-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_BAT ='e7a10006-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const C_VER ='e7a10007-9b6a-4c2e-9f1d-2b3c4d5e6f70';
-// mcumgr SMP service (appears only after the DFU-enable command 0x04)
-const SMP_SVC='8d53dc1d-1db7-4cd3-868b-8a527460aa84';
-const SMP_CHR='da2e7828-fbce-4e01-ae9e-261174997c48';
 const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
 const SESSION_SECONDS=180;
 const PIN_CAP={CR2450:620,CR2477:1000};
-const MANIFEST_URL='firmware.json'; // hosted next to this page
+// firmware.json lives next to this page on GitHub Pages (same origin).
+const MANIFEST_URL='firmware.json';
 
 let device,server,chars={},curSlot=0;
 let devInfo={};
-let otaRunning=false;
 let sessionTimer=null,sessionLeft=SESSION_SECONDS;
 const slotCache=Array.from({length:6},()=>null);
 
@@ -319,7 +307,7 @@ async function finishConnect(){
   log('Connected - please unlock','log-ok');
 }
 function reqOpts(all){
-  const base={optionalServices:[SVC,SMP_SVC]};
+  const base={optionalServices:[SVC]};
   if(all){base.acceptAllDevices=true;}else{base.filters=[{services:[SVC]}];}
   return base;
 }
@@ -330,8 +318,7 @@ $('btnScanAll').onclick=async()=>{try{log('Scanning all devices - pick "Tapama".
   device=await navigator.bluetooth.requestDevice(reqOpts(true));await finishConnect();}
   catch(e){log('Connection error: '+e.message,'log-err');}};
 function onDisc(){stopSession();
-  if(otaRunning){log('Update delivered. Device is rebooting and verifying the new firmware - reconnect in ~20s to check the version.','log-ok');otaRunning=false;}
-  else log('Device disconnected','log-warn');
+  log('Device disconnected','log-warn');
   $('status').textContent='Not connected';$('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
   ['btnDisconnect','cardAuth','cardGen','cardFw','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
@@ -401,12 +388,6 @@ function updatePhyWarn(){
 }
 $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
 $('sPhy').onchange=updatePhyWarn;
-$('btnCalib').onclick=()=>{
-  const v=parseInt($('calibRssi').value,10);
-  if(isNaN(v)){log('Enter the 0m RSSI (read from nRF Connect) first','log-warn');return;}
-  $('sMp').value=v;
-  log(`Measured Power (0m) = ${v} dBm - click Write slot to save`,'log-ok');
-};
 const formatUuid=h=>h.length===32?`${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`:h;
 
 async function selectSlot(n){curSlot=n;markTab();
@@ -588,149 +569,29 @@ async function refreshEstimate(){
 $('btnRefreshEst').onclick=refreshEstimate;
 $('pinType').onchange=refreshEstimate;
 
-// ============ Firmware update (SMP over Web Bluetooth) ============
+// ============ Firmware update check (download only; install via Device Manager) ============
 function cmpVer(a,b){const pa=String(a).split('.').map(Number),pb=String(b).split('.').map(Number);
   for(let i=0;i<3;i++){const d=(pa[i]||0)-(pb[i]||0);if(d)return d;}return 0;}
-let latestManifest=null;
 $('btnCheckFw').onclick=async()=>{
+  $('fwDownload').classList.add('hidden');$('fwNotes').textContent='';
   try{
     log('Checking for updates...');
     const r=await fetch(MANIFEST_URL,{cache:'no-store'});
     if(!r.ok)throw new Error('manifest HTTP '+r.status);
-    latestManifest=await r.json();
-    $('fwLatest').textContent='v'+latestManifest.version;
-    $('fwNotes').textContent=latestManifest.notes||'';
-    const newer=cmpVer(latestManifest.version,devInfo.fw||'0')>0;
-    if(newer){$('btnUpdateFw').classList.remove('hidden');
-      log(`Update available: v${latestManifest.version} (current v${devInfo.fw})`,'log-ok');}
-    else{$('btnUpdateFw').classList.add('hidden');
-      log('Firmware is up to date','log-ok');}
+    const m=await r.json();
+    if(!m.version||!m.url)throw new Error('manifest missing "version" or "url"');
+    $('fwLatest').textContent='v'+m.version;
+    const cur=devInfo.fw||'0';
+    if(cmpVer(m.version,cur)>0){
+      $('fwDownload').href=m.url;$('fwDownload').classList.remove('hidden');
+      $('fwNotes').textContent=m.notes?('Notes: '+m.notes):'';
+      log(`Update available: v${m.version} (current v${cur}) - click Download, then install via Device Manager`,'log-ok');
+    }else{
+      $('fwNotes').textContent='You are running the latest firmware.';
+      log(`Firmware is up to date (current v${cur}, latest v${m.version})`,'log-ok');
+    }
   }catch(e){log('Update check failed: '+e.message,'log-err');}
 };
-$('btnUpdateFw').onclick=async()=>{
-  if(!latestManifest){log('Check for updates first','log-warn');return;}
-  try{
-    log('Downloading '+latestManifest.file+' ...');
-    const r=await fetch(latestManifest.file,{cache:'no-store'});
-    if(!r.ok)throw new Error('firmware HTTP '+r.status);
-    const buf=await r.arrayBuffer();
-    await doOTA(new Uint8Array(buf));
-  }catch(e){log('Update failed: '+e.message,'log-err');otaFail();}
-};
-$('fwFile').onchange=async(e)=>{
-  const f=e.target.files[0];e.target.value='';if(!f)return;
-  try{const buf=await f.arrayBuffer();await doOTA(new Uint8Array(buf));}
-  catch(err){log('Update failed: '+err.message,'log-err');otaFail();}
-};
-function otaProgress(done,total){const p=Math.floor(done/total*100);
-  $('fwBar').style.width=p+'%';$('fwPct').textContent=p+'% ('+done+'/'+total+' bytes)';}
-function otaFail(){otaRunning=false;$('fwProgressWrap').classList.add('hidden');}
-
-// minimal CBOR encode (map/uint/bstr/tstr/bool)
-function cborEncode(obj){
-  const out=[];
-  function head(major,val){
-    if(val<24)out.push((major<<5)|val);
-    else if(val<256)out.push((major<<5)|24,val);
-    else if(val<65536)out.push((major<<5)|25,(val>>8)&0xff,val&0xff);
-    else out.push((major<<5)|26,(val>>>24)&0xff,(val>>16)&0xff,(val>>8)&0xff,val&0xff);
-  }
-  function enc(v){
-    if(typeof v==='number'){if(v>=0)head(0,v);else head(1,-v-1);}
-    else if(typeof v==='boolean')out.push(v?0xf5:0xf4);
-    else if(v instanceof Uint8Array){head(2,v.length);for(const b of v)out.push(b);}
-    else if(typeof v==='string'){const u=new TextEncoder().encode(v);head(3,u.length);for(const b of u)out.push(b);}
-    else if(v&&typeof v==='object'){const k=Object.keys(v);head(5,k.length);for(const key of k){enc(key);enc(v[key]);}}
-  }
-  enc(obj);return new Uint8Array(out);
-}
-// minimal CBOR decode
-function cborDecode(u8){
-  let i=0;
-  function read(){
-    const b=u8[i++],major=b>>5,info=b&0x1f;let val=info;
-    if(info===24)val=u8[i++];
-    else if(info===25){val=(u8[i]<<8)|u8[i+1];i+=2;}
-    else if(info===26){val=((u8[i]<<24)|(u8[i+1]<<16)|(u8[i+2]<<8)|u8[i+3])>>>0;i+=4;}
-    switch(major){
-      case 0:return val;
-      case 1:return -val-1;
-      case 2:{const s=u8.slice(i,i+val);i+=val;return s;}
-      case 3:{const s=new TextDecoder().decode(u8.slice(i,i+val));i+=val;return s;}
-      case 4:{const a=[];for(let k=0;k<val;k++)a.push(read());return a;}
-      case 5:{const o={};for(let k=0;k<val;k++){const key=read();o[key]=read();}return o;}
-      case 7:{if(info===20)return false;if(info===21)return true;return null;}
-    }
-  }
-  return read();
-}
-function smpFrame(op,group,id,seq,payload){
-  const h=new Uint8Array(8+payload.length);
-  h[0]=op;h[1]=0;h[2]=(payload.length>>8)&0xff;h[3]=payload.length&0xff;
-  h[4]=(group>>8)&0xff;h[5]=group&0xff;h[6]=seq;h[7]=id;
-  h.set(payload,8);return h;
-}
-let smpChar=null,smpResolve=null,smpReject=null,smpBuf=new Uint8Array(0);
-function smpOnNotify(e){
-  const v=new Uint8Array(e.target.value.buffer);
-  const m=new Uint8Array(smpBuf.length+v.length);m.set(smpBuf);m.set(v,smpBuf.length);smpBuf=m;
-  if(smpBuf.length>=8){const len=(smpBuf[2]<<8)|smpBuf[3];
-    if(smpBuf.length>=8+len){const payload=smpBuf.slice(8,8+len);smpBuf=new Uint8Array(0);
-      if(smpResolve){const r=smpResolve;smpResolve=smpReject=null;try{r(cborDecode(payload));}catch(err){r({});}}}}
-}
-function smpRequest(op,group,id,seq,payloadObj){
-  return new Promise((resolve,reject)=>{
-    smpResolve=resolve;smpReject=reject;smpBuf=new Uint8Array(0);
-    const frame=smpFrame(op,group,id,seq,cborEncode(payloadObj));
-    const to=setTimeout(()=>{if(smpReject){const rj=smpReject;smpResolve=smpReject=null;rj(new Error('SMP timeout'));}},15000);
-    smpChar.writeValueWithoutResponse(frame).catch(err=>{clearTimeout(to);if(smpReject){smpResolve=smpReject=null;reject(err);}});
-  });
-}
-async function doOTA(image){
-  if(!device||!device.gatt.connected){log('Connect and unlock first','log-err');return;}
-  otaRunning=true;
-  $('fwProgressWrap').classList.remove('hidden');otaProgress(0,image.length);
-  log(`Firmware image: ${image.length} bytes`);
-  const sha=new Uint8Array(await crypto.subtle.digest('SHA-256',image));
-
-  // 1. disable the session lock (SMP is registered statically, always present;
-  //    we do NOT disconnect/reconnect - that would drop us back to the lock UI)
-  log('Enabling DFU mode...');
-  await writeChar(chars.cmd,Uint8Array.of(0x04));
-  stopSession('Update mode - lock off');
-  await new Promise(r=>setTimeout(r,400));
-
-  // 2. discover the SMP service on the SAME connection
-  let smpSvc;
-  try{smpSvc=await server.getPrimaryService(SMP_SVC);}
-  catch(e){throw new Error('SMP service not found: '+e.message);}
-  smpChar=await smpSvc.getCharacteristic(SMP_CHR);
-  await smpChar.startNotifications();
-  smpChar.addEventListener('characteristicvaluechanged',smpOnNotify);
-
-  // 3. upload to slot 1
-  const CHUNK=128;let off=0,seq=0;
-  log('Uploading firmware (this can take a few minutes)...');
-  while(off<image.length){
-    const data=image.slice(off,off+CHUNK);
-    const map={image:0,off:off,data:data};
-    if(off===0){map.len=image.length;map.sha=sha;}
-    const resp=await smpRequest(2,1,1,(seq++)&0xff,map);
-    if(resp&&resp.rc!==undefined&&resp.rc!==0)throw new Error('upload rc='+resp.rc);
-    off=(resp&&resp.off!==undefined)?resp.off:off+data.length;
-    otaProgress(off,image.length);
-  }
-  log('Upload complete. Marking image for test...','log-ok');
-
-  // 4. set the new image pending (test mode -> auto-revert if it fails to confirm)
-  await smpRequest(2,1,0,(seq++)&0xff,{hash:sha,confirm:false});
-
-  // 5. reset -> MCUboot swaps, the new image boots and self-confirms after 15s
-  log('Resetting device to apply update...','log-ok');
-  try{await smpRequest(2,0,5,(seq++)&0xff,{});}catch(e){}
-  log('Update sent. The device is rebooting and verifying the new firmware.','log-ok');
-  $('fwBar').style.width='100%';$('fwPct').textContent='Rebooting...';
-}
 
 // ---- init ----
 if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');}
