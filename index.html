@@ -108,8 +108,13 @@
       <a id="fwDownload" class="hidden" href="#" target="_blank" rel="noopener" style="text-decoration:none"><button>Download update</button></a>
     </div>
     <div id="fwNotes" class="hint"></div>
-    <div class="hint" style="margin-top:8px">Install the downloaded .bin with the <b>nRF Connect Device Manager</b> app: connect to this device, open Firmware Upgrade, select the file, choose Test and Confirm, upload. No password is needed - the image is verified by digital signature, so only officially signed firmware will boot.</div>
+    <div class="hint" style="margin-top:8px">1. Download the .bin. 2. Click <b>Enter update mode</b> below. 3. Open the <b>nRF Connect Device Manager</b> app, connect to this device, open Firmware Upgrade, select the file, choose Test and Confirm, upload. No password is needed - the image is verified by digital signature, so only officially signed firmware will boot.</div>
+    <div class="btnbar">
+      <button id="btnEnterDfu" class="danger">Enter update mode</button>
+    </div>
+    <div id="dfuBanner" class="banner hidden">Update mode is ACTIVE. This device now accepts a firmware upload from nRF Connect Device Manager and the config session lock is disabled. Config is closed until you finish. To cancel without updating, just power-cycle the device.</div>
   </div>
+
 
   <div class="card hidden" id="cardSlot">
     <h2>Slot Configuration</h2>
@@ -302,9 +307,25 @@ async function finishConnect(){
   }catch(e){chars.ver=null;log('No version characteristic (older firmware)','log-warn');}
   $('status').textContent=device.name||'Connected';$('status').classList.add('on');
   $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
-  $('btnDisconnect').classList.remove('hidden');$('cardAuth').classList.remove('hidden');
-  $('authpill').classList.remove('hidden');
-  log('Connected - please unlock','log-ok');
+  $('btnDisconnect').classList.remove('hidden');$('authpill').classList.remove('hidden');
+  // Detect whether a password is required. gen_read succeeds only when the
+  // connection is already authenticated - which the device does automatically
+  // when the password is disabled. If it throws, a password is required.
+  try{
+    await chars.gen.readValue();
+    log('No password required - unlocked automatically','log-ok');
+    $('authpill').textContent='Unlocked';$('authpill').classList.add('on');
+    await enterConfigMode();
+  }catch(e){
+    $('cardAuth').classList.remove('hidden');
+    log('Connected - please unlock','log-ok');
+  }
+}
+async function enterConfigMode(){
+  $('cardAuth').classList.add('hidden');
+  ['cardGen','cardFw','cardSlot','cardEst','cardProfile'].forEach(id=>$(id).classList.remove('hidden'));
+  startSession();
+  await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
 }
 function reqOpts(all){
   const base={optionalServices:[SVC]};
@@ -321,6 +342,7 @@ function onDisc(){stopSession();
   log('Device disconnected','log-warn');
   $('status').textContent='Not connected';$('status').classList.remove('on');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
+  $('dfuBanner').classList.add('hidden');$('btnEnterDfu').disabled=false;
   ['btnDisconnect','cardAuth','cardGen','cardFw','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
 $('btnDisconnect').onclick=()=>{if(device&&device.gatt.connected)device.gatt.disconnect();};
 
@@ -333,9 +355,7 @@ $('btnUnlock').onclick=async()=>{try{
   const hash=await crypto.subtle.digest('SHA-256',comb);
   await writeChar(chars.auth,new Uint8Array(hash));
   log('Unlocked','log-ok');$('authpill').textContent='Unlocked';$('authpill').classList.add('on');
-  ['cardGen','cardFw','cardSlot','cardEst','cardProfile'].forEach(id=>$(id).classList.remove('hidden'));
-  startSession();
-  await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
+  await enterConfigMode();
 }catch(e){log('Unlock failed (wrong password?): '+e.message,'log-err');}};
 
 // ---- general ----
@@ -572,6 +592,18 @@ $('pinType').onchange=refreshEstimate;
 // ============ Firmware update check (download only; install via Device Manager) ============
 function cmpVer(a,b){const pa=String(a).split('.').map(Number),pb=String(b).split('.').map(Number);
   for(let i=0;i<3;i++){const d=(pa[i]||0)-(pb[i]||0);if(d)return d;}return 0;}
+$('btnEnterDfu').onclick=async()=>{
+  const ok=confirm('Enter UPDATE MODE?\n\n- The config session lock (3 min) will be turned off.\n- Config will be closed on this page.\n- The device will accept a firmware upload from nRF Connect Device Manager.\n\nIf you tapped this by mistake, just power-cycle the device to return to normal.\n\nContinue?');
+  if(!ok)return;
+  try{
+    await writeChar(chars.cmd,Uint8Array.of(0x04));
+    stopSession('Update mode');
+    // close config on this page - only the update instructions remain
+    ['cardGen','cardSlot','cardEst','cardProfile','cardAuth'].forEach(id=>$(id).classList.add('hidden'));
+    $('btnEnterDfu').disabled=true;$('dfuBanner').classList.remove('hidden');
+    log('Update mode enabled. Open nRF Connect Device Manager and upload the firmware. Power-cycle to cancel.','log-ok');
+  }catch(e){log('Failed to enter update mode: '+e.message,'log-err');}
+};
 $('btnCheckFw').onclick=async()=>{
   $('fwDownload').classList.add('hidden');$('fwNotes').textContent='';
   try{
