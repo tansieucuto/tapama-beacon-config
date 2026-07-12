@@ -204,6 +204,7 @@
     <div class="row">
       <div><label>Battery type (coin cell holder)</label>
         <select id="pinType">
+          <option value="CR2032">CR2032 (~225 mAh)</option>
           <option value="CR2450">CR2450 (~620 mAh)</option>
           <option value="CR2477">CR2477 (~1000 mAh)</option>
         </select>
@@ -218,7 +219,7 @@
       <div>Avg current<b id="estCur">-</b></div>
       <div>Est. remaining<b id="estLife">-</b></div>
     </div>
-    <div class="hint">Voltage is read live from the device (chip VDD). Level maps 3.0 V = 100%, 2.0 V = 0% (3 V lithium). Remaining time = (level x capacity) / estimated current, a rough figure only. Assumes the cell powers the nRF directly. For exact numbers use a power profiler.</div>
+    <div class="hint">Voltage is read live from the device (chip VDD, cell wired directly to VDD). Level maps 3.0 V = 100%, 2.4 V = 0% (3 V coin cell under BLE load - below ~2.4 V it can no longer advertise reliably). Remaining time = (level x capacity) / estimated current, a rough figure only. For exact numbers use a power profiler.</div>
   </div>
 
   <div class="card hidden" id="cardProfile">
@@ -250,7 +251,7 @@ const C_VER ='e7a10007-9b6a-4c2e-9f1d-2b3c4d5e6f70';
 const TX_LEVELS=[8,7,6,5,4,3,2,0,-4,-8,-12,-16,-20,-40];
 const SLOT_LEN=40;
 const SESSION_SECONDS=180;
-const PIN_CAP={CR2450:620,CR2477:1000};
+const PIN_CAP={CR2032:225,CR2450:620,CR2477:1000};
 // firmware.json lives next to this page on GitHub Pages (same origin).
 const MANIFEST_URL='firmware.json';
 
@@ -579,7 +580,7 @@ async function refreshEstimate(){
   $('estCur').textContent=cur.toFixed(0)+' uA';
   const mv=await readBattery();
   if(mv===null||mv===0){$('estVolt').textContent='n/a';$('estPct').textContent='n/a';$('estLife').textContent='n/a';return;}
-  const pct=Math.max(0,Math.min(100,(mv-2000)/(3000-2000)*100));
+  const pct=Math.max(0,Math.min(100,(mv-2400)/(3000-2400)*100));
   const cap=PIN_CAP[$('pinType').value]||620;
   const days=((pct/100)*cap/(cur/1000))/24;
   $('estVolt').textContent=mv+' mV';
