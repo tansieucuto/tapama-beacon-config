@@ -1,243 +1,484 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tapama Beacon Configurator</title>
 <style>
-  :root{--bg:#0a0a0a;--panel:#141414;--panel2:#1c1c1c;--line:#2b2b2b;
-    --txt:#e9e9e9;--muted:#8c8c8c;--accent:#c8c8c8;--warn:#e0b050;--ok:#7fc97f;}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;
-       background:var(--bg);color:var(--txt);line-height:1.5}
-  header{padding:18px 20px;border-bottom:1px solid var(--line);
-         display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  header h1{font-size:18px;margin:0;font-weight:650}
-  .pill{font-size:12px;padding:3px 10px;border-radius:20px;background:var(--panel2);color:var(--muted)}
-  .pill.on{background:#2e2e2e;color:#fff}
-  main{max-width:760px;margin:0 auto;padding:20px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
-  .card h2{font-size:14px;margin:0 0 14px;color:#cfcfcf;text-transform:uppercase;letter-spacing:.5px}
-  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
-  input,select,textarea{width:100%;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);
-        border-radius:8px;color:var(--txt);font-size:14px;font-family:inherit}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:#6a6a6a}
-  .row{display:flex;gap:12px;flex-wrap:wrap}
-  .row>div{flex:1;min-width:140px}
-  .chk{display:flex;align-items:center;gap:8px;margin-top:12px}
-  .chk input{width:auto}
-  button{padding:10px 16px;border:none;border-radius:8px;background:var(--accent);
-         color:#0a0a0a;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit}
-  button:hover{background:#fff}
-  button.sec{background:var(--panel2);color:var(--txt);border:1px solid var(--line)}
-  button.sec:hover{background:#262626}
-  button.danger{background:var(--panel2);color:#cfcfcf;border:1px solid #3a3a3a}
-  button:disabled{opacity:.4;cursor:not-allowed}
-  .btnbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-  .hidden{display:none}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .hint{font-size:11px;color:var(--muted);margin-top:4px}
-  .warn{color:var(--warn)}
-  .ok{color:var(--ok)}
-  .fixedbadge{display:inline-block;padding:9px 11px;background:#1c1c1c;border:1px solid var(--line);
-       border-radius:8px;color:#cfcfcf;font-family:ui-monospace,monospace;font-size:14px;width:100%}
-  #log{background:#000;border:1px solid var(--line);border-radius:8px;padding:12px;height:150px;
-       overflow:auto;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap;color:#8c8c8c}
-  .log-ok{color:#cfcfcf}.log-err{color:#f2f2f2;font-weight:600}.log-warn{color:#9a9a9a}
-  .slots{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-  .slots button{flex:1;min-width:42px;padding:8px 0}
-  .slots button.active{background:var(--accent);color:#0a0a0a}
-  .slots button:not(.active){background:var(--panel2);color:var(--muted)}
-  .est{display:flex;gap:16px;flex-wrap:wrap}
-  .est div{flex:1;min-width:120px;background:var(--panel2);border:1px solid var(--line);
-       border-radius:8px;padding:10px}
-  .est b{display:block;font-size:18px;color:#fff}
-  .bar{height:10px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-top:8px}
-  .bar>div{height:100%;width:0;background:var(--accent);transition:width .15s}
-  .banner{padding:10px 12px;border-radius:8px;background:#2a2410;border:1px solid #4a3f1a;color:var(--warn);font-size:13px;margin-top:10px}
+:root{
+  --bg:#0e1419; --surface:#161d24; --surface2:#1d262e; --line:#2a353f;
+  --txt:#e4e9ed; --txt-dim:#8b9aa7; --txt-faint:#5f6f7c;
+  --accent:#e8a33d; --accent-dim:#8a6122;
+  --info:#5fb3c7; --good:#6fbf8f; --bad:#e07b6a;
+  --btn-fg:#12181d;
+  --radius:10px;
+}
+:root[data-theme="light"]{
+  --bg:#eef1f3; --surface:#ffffff; --surface2:#f4f6f8; --line:#ccd5dd;
+  --txt:#141d24; --txt-dim:#4d5d69; --txt-faint:#5f6e7a;
+  --accent:#9a6100; --accent-dim:#dcb87a;
+  --info:#186b80; --good:#276b46; --bad:#a63f2e;
+  --btn-fg:#ffffff;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:14px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace}
+
+/* ---------- micro label: the recurring structural device ---------- */
+.eyebrow{
+  font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--txt-faint);
+}
+
+/* ---------- header ---------- */
+header{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:14px 22px; border-bottom:1px solid var(--line); background:var(--surface);
+}
+.brand{display:flex; flex-direction:column; line-height:1.15}
+.brand b{font-size:16px; font-weight:650; letter-spacing:-.01em}
+.brand span{font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--txt-faint)}
+.spacer{margin-left:auto}
+
+/* ---------- buttons ---------- */
+button{
+  font:inherit; font-weight:600; font-size:13px; cursor:pointer;
+  padding:9px 15px; border-radius:8px; border:1px solid transparent;
+  background:var(--accent); color:var(--btn-fg); transition:filter .12s,background .12s;
+}
+button:hover:not(:disabled){filter:brightness(1.12)}
+button.sec{background:var(--surface2); color:var(--txt); border-color:var(--line)}
+button.sec:hover:not(:disabled){background:var(--line)}
+button.ghost{background:transparent; color:var(--txt-dim); border-color:var(--line)}
+button.ghost:hover:not(:disabled){color:var(--txt); border-color:var(--txt-faint)}
+button:disabled{opacity:.4; cursor:not-allowed}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,
+textarea:focus-visible{outline:2px solid var(--info); outline-offset:2px}
+.btnbar{display:flex; gap:9px; flex-wrap:wrap; margin-top:16px}
+
+/* ---------- SIGNATURE: instrument status rail ---------- */
+.rail{
+  display:flex; gap:0; flex-wrap:wrap; border-bottom:1px solid var(--line);
+  background:var(--surface2);
+}
+.rail>div{
+  flex:1; min-width:118px; padding:9px 18px;
+  border-right:1px solid var(--line);
+}
+.rail>div:last-child{border-right:none}
+.rail .eyebrow{display:block; margin-bottom:1px}
+.rail b{
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--txt);
+}
+.rail b.live{color:var(--accent)}
+.rail b.off{color:var(--txt-faint)}
+
+/* ---------- shell: nav + workspace ---------- */
+.shell{display:flex; align-items:flex-start; max-width:1120px; margin:0 auto; padding:22px}
+nav{
+  flex:0 0 178px; position:sticky; top:22px;
+  display:flex; flex-direction:column; gap:2px;
+}
+nav button{
+  background:transparent; border:none; color:var(--txt-dim);
+  text-align:left; padding:9px 12px; border-radius:8px; font-size:13px;
+  border-left:2px solid transparent; border-radius:0 8px 8px 0;
+}
+nav button:hover{background:var(--surface); color:var(--txt); filter:none}
+nav button[aria-current="true"]{
+  background:var(--surface); color:var(--txt);
+  border-left-color:var(--accent); font-weight:650;
+}
+main{flex:1; min-width:0; margin-left:22px}
+
+/* ---------- panels & cards ---------- */
+.panel{display:none}
+.panel.on{display:block}
+.card{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); padding:20px; margin-bottom:16px;
+}
+.card>h2{
+  margin:0 0 4px; font-size:15px; font-weight:650; letter-spacing:-.01em;
+}
+.card>h2+.sub{margin:0 0 16px; font-size:12px; color:var(--txt-dim)}
+.inner{background:var(--surface2); border:1px solid var(--line);
+  border-radius:8px; padding:14px; margin:16px 0}
+
+/* ---------- forms ---------- */
+label{display:block; margin:14px 0 5px;
+  font-size:10px; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--txt-faint)}
+label.plain{text-transform:none; letter-spacing:0; font-size:13px;
+  font-weight:500; color:var(--txt); margin:0}
+input,select,textarea{
+  width:100%; padding:9px 11px; font:inherit; font-size:14px;
+  background:var(--bg); color:var(--txt);
+  border:1px solid var(--line); border-radius:8px;
+}
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea{background:var(--surface2)}
+input:focus,select:focus,textarea:focus{outline:none; border-color:var(--info)}
+input[type=number],input.mono,textarea.mono{
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-size:13px}
+.row{display:flex; gap:14px; flex-wrap:wrap}
+.row>div{flex:1; min-width:150px}
+.chk{display:flex; align-items:flex-start; gap:9px; margin-top:14px}
+.chk input{width:auto; margin-top:3px; flex:none; accent-color:var(--accent)}
+.hint{font-size:12px; color:var(--txt-dim); margin-top:5px}
+.hint.warn{color:var(--accent)}
+
+/* ---------- readouts ---------- */
+.readouts{display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:12px}
+.readouts>div{background:var(--surface2); border:1px solid var(--line);
+  border-radius:8px; padding:12px}
+.readouts b{display:block; margin-top:3px;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:19px; font-weight:600; letter-spacing:-.02em; color:var(--txt)}
+
+/* ---------- slot selector ---------- */
+.slots{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:4px}
+.slots button{flex:1; min-width:44px; padding:9px 0; font-size:13px;
+  background:var(--surface2); color:var(--txt-dim); border:1px solid var(--line)}
+.slots button.active{background:var(--accent); color:var(--btn-fg);
+  border-color:var(--accent); font-weight:700}
+
+/* ---------- banner & log ---------- */
+.banner{padding:11px 13px; border-radius:8px; font-size:13px; margin-top:14px;
+  background:var(--surface2); border:1px solid var(--accent-dim); color:var(--accent)}
+#log{
+  background:var(--bg); border:1px solid var(--line); border-radius:8px;
+  padding:13px; height:340px; overflow:auto; white-space:pre-wrap;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-size:12px; line-height:1.6; color:var(--txt-dim);
+}
+.log-ok{color:var(--good)} .log-err{color:var(--bad)} .log-warn{color:var(--accent)}
+
+.hidden{display:none !important}
+a.plain{text-decoration:none}
+
+/* ---------- mobile ---------- */
+@media (max-width:760px){
+  header{padding:12px 14px; gap:10px}
+  .rail>div{min-width:50%; flex:none;
+    border-bottom:1px solid var(--line)}
+  .shell{display:block; padding:14px}
+  nav{
+    position:static; flex-direction:row; gap:6px; overflow-x:auto;
+    padding-bottom:10px; margin-bottom:4px; -webkit-overflow-scrolling:touch;
+  }
+  nav::-webkit-scrollbar{display:none}
+  nav button{
+    flex:none; white-space:nowrap; border-left:none; border-radius:8px;
+    background:var(--surface); border:1px solid var(--line); padding:8px 14px;
+  }
+  nav button[aria-current="true"]{
+    border-left:none; border-color:var(--accent); color:var(--accent);
+  }
+  main{margin-left:0}
+  .card{padding:16px}
+  #log{height:260px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
 </style>
 </head>
 <body>
+
 <header>
-  <h1>Tapama Beacon Configurator</h1>
-  <span id="status" class="pill">Not connected</span>
-  <span id="fwver" class="pill hidden"></span>
-  <span id="sessionPill" class="pill hidden"></span>
-  <span id="authpill" class="pill hidden">Locked</span>
-  <div style="margin-left:auto"></div>
+  <div class="brand"><b>Tapama Beacon</b><span>Configurator</span></div>
+  <div class="spacer"></div>
+  <button id="btnTheme" class="ghost">Light</button>
   <button id="btnConnect">Connect</button>
   <button id="btnScanAll" class="sec">Scan all</button>
   <button id="btnDisconnect" class="sec hidden">Disconnect</button>
 </header>
 
-<main>
-  <div class="card hidden" id="cardAuth">
-    <h2>Unlock</h2>
-    <label>Device password</label>
-    <input id="passInput" type="password" value="0000" autocomplete="off">
-    <div class="hint">Challenge-response: the app reads a nonce and sends SHA-256(password + nonce). The password is never sent in clear text.</div>
-    <div class="btnbar"><button id="btnUnlock">Unlock</button></div>
-  </div>
+<div class="rail">
+  <div><span class="eyebrow">Link</span><b id="status" class="off">Not connected</b></div>
+  <div><span class="eyebrow">Firmware</span><b id="fwver" class="off">&mdash;</b></div>
+  <div><span class="eyebrow">Access</span><b id="authpill" class="off">Locked</b></div>
+  <div><span class="eyebrow">Session</span><b id="sessionPill" class="off">&mdash;</b></div>
+</div>
 
-  <div class="card hidden" id="cardGen">
-    <h2>General Configuration</h2>
-    <label>Device name (max 29 chars)</label>
-    <input id="genName" maxlength="29">
-    <label>Change password (leave blank to keep)</label>
-    <input id="genPass" type="text" maxlength="32" placeholder="">
-    <div class="chk"><input id="genPwReq" type="checkbox"><label style="margin:0">Require password on connect</label></div>
-    <div class="chk"><input id="genConn" type="checkbox"><label style="margin:0">Connectable (config mode)</label></div>
-    <div class="hint">Connectable is RAM-only and resets to ON at every power-up. Turn OFF to ship a pure non-connectable beacon; power-cycle the device to make it connectable again.</div>
-    <div class="hint">The BLE address is fixed (the chip's factory FICR address) and cannot be changed.</div>
-    <div class="btnbar">
-      <button id="btnGenApply">Apply (RAM)</button>
-      <button id="btnSave" class="sec">Save to Flash</button>
-      <button id="btnReboot" class="sec">Reboot</button>
-      <button id="btnFactory" class="danger">Factory Reset</button>
-    </div>
-  </div>
+<div class="shell">
 
-  <div class="card hidden" id="cardFw">
-    <h2>Firmware</h2>
-    <div class="row">
-      <div>Current version<b id="fwCurrent" style="display:block;font-size:16px;color:#fff">-</b></div>
-      <div>Latest available<b id="fwLatest" style="display:block;font-size:16px;color:#fff">-</b></div>
-    </div>
-    <div class="btnbar">
-      <button id="btnCheckFw" class="sec">Check for updates</button>
-      <a id="fwDownload" class="hidden" href="#" target="_blank" rel="noopener" style="text-decoration:none"><button>Download update</button></a>
-    </div>
-    <div id="fwNotes" class="hint"></div>
-    <div class="hint" style="margin-top:8px">1. Download the .bin. 2. Click <b>Enter update mode</b> below. 3. Open the <b>nRF Connect Device Manager</b> app, connect to this device, open Firmware Upgrade, select the file, choose Test and Confirm, upload. No password is needed - the image is verified by digital signature, so only officially signed firmware will boot.</div>
-    <div class="btnbar">
-      <button id="btnEnterDfu" class="danger">Enter update mode</button>
-    </div>
-    <div id="dfuBanner" class="banner hidden">Update mode is ACTIVE. This device now accepts a firmware upload from nRF Connect Device Manager and the config session lock is disabled. Config is closed until you finish. To cancel without updating, just power-cycle the device.</div>
-  </div>
+  <nav id="nav" class="hidden">
+    <button data-panel="general" aria-current="true">General</button>
+    <button data-panel="slots">Slots</button>
+    <button data-panel="battery">Battery</button>
+    <button data-panel="firmware">Firmware</button>
+    <button data-panel="profile">Profile</button>
+    <button data-panel="log">Log</button>
+  </nav>
 
+  <main>
 
-  <div class="card hidden" id="cardSlot">
-    <h2>Slot Configuration</h2>
-    <div class="slots" id="slotTabs"></div>
-    <div class="chk"><input id="sEn" type="checkbox"><label style="margin:0">Enable slot</label></div>
-    <div class="row">
-      <div><label>Advertising interval (ms, 20-10000)</label><input id="sInt" type="number" min="20" max="10000" value="100"></div>
-      <div><label>Measured Power @0m (dBm)</label><input id="sMp" type="number" min="-128" max="20" value="-18"></div>
-    </div>
-    <div class="row">
-      <div><label>TX Power (dBm, radio)</label><select id="sTx"></select></div>
-      <div><label>PHY</label><select id="sPhy">
-        <option value="0">1M (legacy, max compatibility)</option>
-        <option value="1">2M (extended - poor scanner support)</option>
-        <option value="2">Coded / Long range (extended)</option>
-      </select></div>
-    </div>
-    <div class="hint warn" id="phyWarn"></div>
-
-    <div class="card" style="background:var(--panel2);padding:12px;margin:12px 0">
-      <label style="margin-top:0">How to set Measured Power (calibrate at 0 m)</label>
-      <div class="hint">1. Open nRF Connect and place the phone right next to the beacon (~0 m). 2. Read this device's RSSI (dBm). 3. Type that value straight into the <b>Measured Power @0m</b> field above, then click <b>Write slot</b>. The firmware converts automatically: iBeacon subtracts 41 dB (0 m to 1 m reference), Eddystone uses the 0 m value directly.</div>
+    <!-- unlock (stands alone before access is granted) -->
+    <div class="card hidden" id="cardAuth">
+      <h2>Unlock device</h2>
+      <p class="sub">Enter the device password to load and change its configuration.</p>
+      <label for="passInput">Device password</label>
+      <input id="passInput" type="password" value="0000" autocomplete="off">
+      <p class="hint">The password never leaves your browser. The app reads a one-time nonce from the device and returns SHA-256(password + nonce).</p>
+      <div class="btnbar"><button id="btnUnlock">Unlock</button></div>
     </div>
 
-    <label>Frame Type</label>
-    <select id="sFrame">
-      <option value="1">1 - iBeacon</option>
-      <option value="2">2 - Eddystone-URL</option>
-      <option value="3">3 - Eddystone-UID</option>
-      <option value="4">4 - Eddystone-TLM (auto-generated)</option>
-      <option value="5">5 - Custom (Manufacturer Data)</option>
-      <option value="6">6 - Raw AD (advanced)</option>
-    </select>
+    <!-- GENERAL -->
+    <section class="panel" id="panel-general">
+      <div class="card" id="cardGen">
+        <h2>General</h2>
+        <p class="sub">Identity, access and how the device advertises for configuration.</p>
 
-    <div id="fIbeacon" class="frameBox">
-      <label>UUID (32 hex)</label>
-      <input id="ibUuid" class="mono" maxlength="47" value="18ee1516-016b-4bec-ad96-bcb96d166e97">
-      <div class="row">
-        <div><label>Major (0-65535)</label><input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
-        <div><label>Minor (0-65535)</label><input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
+        <label for="genName">Device name (max 29 characters)</label>
+        <input id="genName" maxlength="29">
+
+        <label for="genPass">Change password (leave blank to keep current)</label>
+        <input id="genPass" type="text" maxlength="32">
+
+        <div class="chk">
+          <input id="genPwReq" type="checkbox">
+          <div><label class="plain" for="genPwReq">Require password on connect</label></div>
+        </div>
+
+        <div class="chk">
+          <input id="genConn" type="checkbox">
+          <div>
+            <label class="plain" for="genConn">Connectable (config mode)</label>
+            <p class="hint">Held in RAM and back ON at every power-up. Turn off to ship a pure non-connectable beacon; power-cycle the device to reach it again.</p>
+          </div>
+        </div>
+
+        <div class="chk">
+          <input id="genPwrSave" type="checkbox">
+          <div>
+            <label class="plain" for="genPwrSave">Power-save config mode (short range)</label>
+            <p class="hint">Drops config advertising to &minus;20 dBm every 2000 ms, so the device is only reachable within roughly 0.3&ndash;1 m. Saves battery and keeps config physically private. Beacon slots are untouched. Held in RAM, back OFF at every power-up.</p>
+          </div>
+        </div>
+
+        <p class="hint">The BLE address is the chip's factory address and cannot be changed.</p>
+
+        <div class="btnbar">
+          <button id="btnGenApply">Apply to RAM</button>
+          <button id="btnSave" class="sec">Save to flash</button>
+          <button id="btnReboot" class="sec">Reboot</button>
+          <button id="btnFactory" class="ghost">Factory reset</button>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div id="fUrl" class="frameBox hidden">
-      <label>URL</label><input id="urlVal" value="https://www.nordicsemi.com">
-      <div class="hint">Encodes scheme + suffix per the Eddystone spec, max 17 bytes after the scheme.</div>
-    </div>
+    <!-- SLOTS -->
+    <section class="panel" id="panel-slots">
+      <div class="card" id="cardSlot">
+        <h2>Advertising slots</h2>
+        <p class="sub">Six independent slots. Each one carries its own frame, radio power and interval.</p>
 
-    <div id="fUid" class="frameBox hidden">
-      <div class="row">
-        <div><label>Namespace (20 hex)</label><input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
-        <div><label>Instance (12 hex)</label><input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
-      </div>
-    </div>
+        <label>Select slot</label>
+        <div class="slots" id="slotTabs"></div>
 
-    <div id="fTlm" class="frameBox hidden">
-      <div class="hint">TLM is auto-generated: VDD voltage, die temperature, advertising counter, uptime.</div>
-    </div>
+        <div class="chk">
+          <input id="sEn" type="checkbox">
+          <div><label class="plain" for="sEn">Enable this slot</label></div>
+        </div>
 
-    <div id="fCustom" class="frameBox hidden">
-      <div class="row">
-        <div><label>Company ID (hex, LE on air)</label><input id="cCompany" class="mono" maxlength="4" value="5054"></div>
-      </div>
-      <label>Payload (hex, max 29 bytes - after company ID)</label>
-      <input id="cData" class="mono" value="010203deadbeef">
-      <div class="hint">AD type 0xFF (Manufacturer Specific Data). Default company 0x5054 = Tapama.</div>
-    </div>
+        <div class="row">
+          <div>
+            <label for="sInt">Advertising interval (ms, 20&ndash;10000)</label>
+            <input id="sInt" type="number" min="20" max="10000" value="100">
+          </div>
+          <div>
+            <label for="sMp">Measured power @ 0 m (dBm)</label>
+            <input id="sMp" type="number" min="-128" max="20" value="-18">
+          </div>
+        </div>
 
-    <div id="fRaw" class="frameBox hidden">
-      <label>Raw AD bytes (hex) - full [len][type][data] blocks, max 31 bytes total</label>
-      <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5">
-      <div class="btnbar">
-        <button class="sec" id="rawTplIbeacon">Insert iBeacon template</button>
-        <button class="sec" id="rawTplFlags">Insert flags 020106</button>
-      </div>
-      <div class="hint warn">Advanced: you build the entire AD yourself. Malformed lengths mean the slot will not advertise. Spaces are ignored.</div>
-    </div>
+        <div class="row">
+          <div><label for="sTx">TX power (dBm)</label><select id="sTx"></select></div>
+          <div><label for="sPhy">PHY</label>
+            <select id="sPhy">
+              <option value="0">1M &mdash; legacy, widest compatibility</option>
+              <option value="1">2M &mdash; extended, poor scanner support</option>
+              <option value="2">Coded &mdash; long range, extended</option>
+            </select>
+          </div>
+        </div>
+        <p class="hint warn" id="phyWarn"></p>
 
-    <div class="btnbar">
-      <button id="btnReadSlot" class="sec">Re-read slot</button>
-      <button id="btnWriteSlot">Write slot</button>
-    </div>
-  </div>
+        <div class="inner">
+          <span class="eyebrow">Calibrating measured power</span>
+          <p class="hint">Open nRF Connect, hold the phone against the beacon (about 0 m) and read its RSSI. Type that number into <b>Measured power @ 0 m</b> above, then write the slot. The firmware converts it per frame: iBeacon subtracts 41 dB for its 1 m reference, Eddystone uses the 0 m value as-is.</p>
+        </div>
 
-  <div class="card hidden" id="cardEst">
-    <h2>Battery and Estimate</h2>
-    <div class="row">
-      <div><label>Battery type (coin cell holder)</label>
-        <select id="pinType">
-          <option value="CR2032">CR2032 (~225 mAh)</option>
-          <option value="CR2450">CR2450 (~620 mAh)</option>
-          <option value="CR2477">CR2477 (~1000 mAh)</option>
+        <label for="sFrame">Frame type</label>
+        <select id="sFrame">
+          <option value="1">iBeacon</option>
+          <option value="2">Eddystone-URL</option>
+          <option value="3">Eddystone-UID</option>
+          <option value="4">Eddystone-TLM (generated live)</option>
+          <option value="5">Custom manufacturer data</option>
+          <option value="6">Raw AD (advanced)</option>
         </select>
-      </div>
-      <div style="display:flex;align-items:flex-end">
-        <button id="btnRefreshEst" class="sec" style="width:100%">Refresh reading</button>
-      </div>
-    </div>
-    <div class="est" style="margin-top:14px">
-      <div>Battery voltage<b id="estVolt">-</b></div>
-      <div>Battery level<b id="estPct">-</b></div>
-      <div>Avg current<b id="estCur">-</b></div>
-      <div>Est. remaining<b id="estLife">-</b></div>
-    </div>
-    <div class="hint">Voltage is read live from the device (chip VDD, cell wired directly to VDD). Level maps 3.0 V = 100%, 2.4 V = 0% (3 V coin cell under BLE load - below ~2.4 V it can no longer advertise reliably). Remaining time = (level x capacity) / estimated current, a rough figure only. For exact numbers use a power profiler.</div>
-  </div>
 
-  <div class="card hidden" id="cardProfile">
-    <h2>Config Profile (Clone / Provision)</h2>
-    <div class="hint">Export the full configuration (general + all 6 slots) as a portable profile, then import it onto other devices for fleet provisioning. The password is NOT included; each device keeps its own.</div>
-    <div class="btnbar">
-      <button id="btnExport">Export current config</button>
-      <button id="btnExportFile" class="sec">Download file</button>
-      <label class="sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:10px 16px;border-radius:8px;border:1px solid var(--line);font-weight:600;font-size:14px">Load file<input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
-    </div>
-    <label>Profile JSON (paste here to import, or edit)</label>
-    <textarea id="profileText" class="mono" style="height:120px;resize:vertical" placeholder='{"tapama":"cfg",...}'></textarea>
-    <div class="chk"><input id="importSave" type="checkbox" checked><label style="margin:0">Save to flash after import</label></div>
-    <div class="btnbar"><button id="btnImport">Import to this device</button></div>
-  </div>
+        <div id="fIbeacon">
+          <label for="ibUuid">UUID (32 hex)</label>
+          <input id="ibUuid" class="mono" maxlength="47" value="18ee1516-016b-4bec-ad96-bcb96d166e97">
+          <div class="row">
+            <div><label for="ibMajor">Major (0&ndash;65535)</label>
+              <input id="ibMajor" type="number" min="0" max="65535" value="1"></div>
+            <div><label for="ibMinor">Minor (0&ndash;65535)</label>
+              <input id="ibMinor" type="number" min="0" max="65535" value="1"></div>
+          </div>
+        </div>
 
-  <div class="card"><h2>Log</h2><div id="log"></div></div>
-</main>
+        <div id="fUrl" class="hidden">
+          <label for="urlVal">URL</label>
+          <input id="urlVal" value="https://www.nordicsemi.com">
+          <p class="hint">Encoded as scheme plus suffix per the Eddystone spec, up to 17 bytes after the scheme.</p>
+        </div>
+
+        <div id="fUid" class="hidden">
+          <div class="row">
+            <div><label for="uidNs">Namespace (20 hex)</label>
+              <input id="uidNs" class="mono" maxlength="20" value="00112233445566778899"></div>
+            <div><label for="uidInst">Instance (12 hex)</label>
+              <input id="uidInst" class="mono" maxlength="12" value="aabbccddeeff"></div>
+          </div>
+        </div>
+
+        <div id="fTlm" class="hidden">
+          <p class="hint">TLM is generated by the device: supply voltage, die temperature, advertising count and uptime. Nothing to configure.</p>
+        </div>
+
+        <div id="fCustom" class="hidden">
+          <label for="cCompany">Company ID (hex, little-endian on air)</label>
+          <input id="cCompany" class="mono" maxlength="4" value="5054">
+          <label for="cData">Payload (hex, max 29 bytes after the company ID)</label>
+          <input id="cData" class="mono" value="010203deadbeef">
+          <p class="hint">Sent as AD type 0xFF, manufacturer specific data. 0x5054 is the Tapama default.</p>
+        </div>
+
+        <div id="fRaw" class="hidden">
+          <label for="rawData">Raw AD bytes (hex) &mdash; complete [len][type][data] blocks, 31 bytes total</label>
+          <input id="rawData" class="mono" value="0201061aff4c000215 18ee1516016b4becad96bcb96d166e97 00010001c5">
+          <div class="btnbar">
+            <button class="sec" id="rawTplIbeacon">Insert iBeacon template</button>
+            <button class="sec" id="rawTplFlags">Insert flags 020106</button>
+          </div>
+          <p class="hint warn">You build the whole AD yourself. A wrong length byte means the slot will not advertise at all. Spaces are ignored.</p>
+        </div>
+
+        <div class="btnbar">
+          <button id="btnWriteSlot">Write slot</button>
+          <button id="btnReadSlot" class="sec">Re-read slot</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BATTERY -->
+    <section class="panel" id="panel-battery">
+      <div class="card" id="cardEst">
+        <h2>Battery</h2>
+        <p class="sub">Live supply reading from the chip, with a rough life estimate from the slots you have enabled.</p>
+
+        <div class="row">
+          <div><label for="pinType">Cell in the holder</label>
+            <select id="pinType">
+              <option value="CR2032">CR2032 &mdash; about 225 mAh</option>
+              <option value="CR2450">CR2450 &mdash; about 620 mAh</option>
+              <option value="CR2477">CR2477 &mdash; about 1000 mAh</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button id="btnRefreshEst" class="sec" style="width:100%">Refresh reading</button>
+          </div>
+        </div>
+
+        <div class="readouts" style="margin-top:18px">
+          <div><span class="eyebrow">Voltage</span><b id="estVolt">&mdash;</b></div>
+          <div><span class="eyebrow">Level</span><b id="estPct">&mdash;</b></div>
+          <div><span class="eyebrow">Avg current</span><b id="estCur">&mdash;</b></div>
+          <div><span class="eyebrow">Remaining</span><b id="estLife">&mdash;</b></div>
+        </div>
+
+        <p class="hint">Level maps 3.0 V to 100% and 2.4 V to 0%, the usable window of a 3 V coin cell under BLE load. Remaining time is level times capacity divided by estimated current &mdash; an order-of-magnitude figure, not a measurement. Use a power profiler for real numbers.</p>
+      </div>
+    </section>
+
+    <!-- FIRMWARE -->
+    <section class="panel" id="panel-firmware">
+      <div class="card" id="cardFw">
+        <h2>Firmware</h2>
+        <p class="sub">Check for a newer build, download it, then install it with nRF Connect Device Manager.</p>
+
+        <div class="readouts">
+          <div><span class="eyebrow">On device</span><b id="fwCurrent">&mdash;</b></div>
+          <div><span class="eyebrow">Available</span><b id="fwLatest">&mdash;</b></div>
+        </div>
+
+        <div class="btnbar">
+          <button id="btnCheckFw" class="sec">Check for updates</button>
+          <a id="fwDownload" class="plain hidden" href="#" target="_blank" rel="noopener"><button>Download update</button></a>
+        </div>
+        <p id="fwNotes" class="hint"></p>
+
+        <div class="inner">
+          <span class="eyebrow">Installing an update</span>
+          <p class="hint">Download the .bin, then click <b>Enter update mode</b>. Open nRF Connect Device Manager, connect to this device, open Firmware Upgrade, pick the file and choose Test and Confirm. No password is involved: the device verifies the image signature and refuses anything not signed with the official key.</p>
+        </div>
+
+        <div class="btnbar"><button id="btnEnterDfu" class="ghost">Enter update mode</button></div>
+        <div id="dfuBanner" class="banner hidden">Update mode is active. The device accepts a firmware upload from nRF Connect Device Manager and the session lock is off. Configuration is closed here until the update finishes. Power-cycle the device to cancel.</div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="panel" id="panel-profile">
+      <div class="card" id="cardProfile">
+        <h2>Config profile</h2>
+        <p class="sub">Copy one device's setup onto the rest of a batch.</p>
+        <p class="hint">Exports general settings and all six slots. Passwords are never included, so every device keeps its own.</p>
+
+        <div class="btnbar">
+          <button id="btnExport">Export current config</button>
+          <button id="btnExportFile" class="sec">Download file</button>
+          <label class="plain sec" style="display:inline-flex;align-items:center;cursor:pointer;padding:9px 15px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);font-weight:600;font-size:13px;margin:0">
+            Load file<input id="importFile" type="file" accept=".json,application/json" style="display:none">
+          </label>
+        </div>
+
+        <label for="profileText">Profile JSON</label>
+        <textarea id="profileText" class="mono" style="height:150px;resize:vertical" placeholder='{"tapama":"cfg", ...}'></textarea>
+
+        <div class="chk">
+          <input id="importSave" type="checkbox" checked>
+          <div><label class="plain" for="importSave">Save to flash after importing</label></div>
+        </div>
+
+        <div class="btnbar"><button id="btnImport">Import to this device</button></div>
+      </div>
+    </section>
+
+    <!-- LOG -->
+    <section class="panel on" id="panel-log">
+      <div class="card">
+        <h2>Log</h2>
+        <p class="sub">Every exchange with the device, newest at the bottom.</p>
+        <div id="log"></div>
+        <div class="btnbar"><button id="btnClearLog" class="sec">Clear log</button></div>
+      </div>
+    </section>
+
+  </main>
+</div>
 
 <script>
 const SVC ='e7a10000-9b6a-4c2e-9f1d-2b3c4d5e6f70';
@@ -267,6 +508,41 @@ function hexToBytes(h){h=h.replace(/[^0-9a-fA-F]/g,'');const a=new Uint8Array(h.
 const bytesToHex=a=>Array.from(a,b=>b.toString(16).padStart(2,'0')).join('');
 async function writeChar(c,d){return c.writeValueWithResponse?c.writeValueWithResponse(d):c.writeValue(d);}
 
+// ---- theme ----
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  $('btnTheme').textContent = t==='dark' ? 'Light' : 'Dark';
+  try{localStorage.setItem('tapama-theme',t);}catch(e){}
+}
+$('btnTheme').onclick=()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  applyTheme(cur==='dark'?'light':'dark');
+};
+(function initTheme(){
+  let t=null;
+  try{t=localStorage.getItem('tapama-theme');}catch(e){}
+  if(!t) t=window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';
+  applyTheme(t);
+})();
+
+// ---- panel navigation ----
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+name));
+  document.querySelectorAll('#nav button').forEach(b=>
+    b.setAttribute('aria-current', b.dataset.panel===name ? 'true' : 'false'));
+}
+document.querySelectorAll('#nav button').forEach(b=>{
+  b.onclick=()=>showPanel(b.dataset.panel);
+});
+$('btnClearLog').onclick=()=>{$('log').innerHTML='';log('Log cleared.');};
+
+// ---- rail helpers ----
+function setRail(id,text,state){
+  const el=$(id); el.textContent=text;
+  el.classList.toggle('live',state==='live');
+  el.classList.toggle('off',state!=='live');
+}
+
 // ---- Eddystone URL codec ----
 const URL_SCHEMES=['http://www.','https://www.','http://','https://'];
 const URL_SUFFIX=['.com/','.org/','.edu/','.net/','.info/','.biz/','.gov/','.com','.org','.edu','.net','.info','.biz','.gov'];
@@ -279,11 +555,10 @@ function decodeUrl(sc,bytes){let s=URL_SCHEMES[sc]||'';for(const b of bytes)s+=(
 
 // ---- session countdown ----
 function updateSessionUI(){const m=Math.floor(sessionLeft/60),s=sessionLeft%60;
-  $('sessionPill').textContent=`Session ${m}:${String(s).padStart(2,'0')}`;
-  $('sessionPill').classList.remove('hidden');}
+  setRail('sessionPill',`${m}:${String(s).padStart(2,'0')}`,'live');}
 function startSession(){sessionLeft=SESSION_SECONDS;updateSessionUI();clearInterval(sessionTimer);
   sessionTimer=setInterval(()=>{sessionLeft--;if(sessionLeft<=0){sessionLeft=0;updateSessionUI();clearInterval(sessionTimer);}else updateSessionUI();},1000);}
-function stopSession(msg){clearInterval(sessionTimer);if(msg){$('sessionPill').textContent=msg;$('sessionPill').classList.remove('hidden');}else $('sessionPill').classList.add('hidden');}
+function stopSession(msg){clearInterval(sessionTimer);setRail('sessionPill',msg||'\u2014',msg?'live':'off');}
 
 // ---- connect ----
 async function finishConnect(){
@@ -302,29 +577,32 @@ async function finishConnect(){
     const fw=`v${v[0]}.${v[1]}.${v[2]}`;
     const feat=v[6]|(v[7]<<8);
     devInfo={fw:fw.slice(1),slots:v[3],maxFrame:v[4],cfgVer:v[5],feat:feat};
-    $('fwver').textContent='FW '+fw;$('fwver').classList.remove('hidden');
+    setRail('fwver',fw,'live');
     $('fwCurrent').textContent=fw;
     log(`Firmware ${fw} - slots=${v[3]} maxFrame=${v[4]} cfgVer=${v[5]} feat=0x${feat.toString(16)}`,'log-ok');
   }catch(e){chars.ver=null;log('No version characteristic (older firmware)','log-warn');}
-  $('status').textContent=device.name||'Connected';$('status').classList.add('on');
+  setRail('status',device.name||'Connected','live');
   $('btnConnect').classList.add('hidden');$('btnScanAll').classList.add('hidden');
-  $('btnDisconnect').classList.remove('hidden');$('authpill').classList.remove('hidden');
+  $('btnDisconnect').classList.remove('hidden');
   // Detect whether a password is required. gen_read succeeds only when the
   // connection is already authenticated - which the device does automatically
   // when the password is disabled. If it throws, a password is required.
   try{
     await chars.gen.readValue();
     log('No password required - unlocked automatically','log-ok');
-    $('authpill').textContent='Unlocked';$('authpill').classList.add('on');
+    setRail('authpill','Unlocked','live');
     await enterConfigMode();
   }catch(e){
     $('cardAuth').classList.remove('hidden');
+    setRail('authpill','Locked','off');
     log('Connected - please unlock','log-ok');
   }
 }
 async function enterConfigMode(){
   $('cardAuth').classList.add('hidden');
-  ['cardGen','cardFw','cardSlot','cardEst','cardProfile'].forEach(id=>$(id).classList.remove('hidden'));
+  $('nav').classList.remove('hidden');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('hidden'));
+  showPanel('general');
   startSession();
   await readGeneral();buildSlotTabs();await selectSlot(0);await refreshEstimate();
 }
@@ -341,10 +619,16 @@ $('btnScanAll').onclick=async()=>{try{log('Scanning all devices - pick "Tapama".
   catch(e){log('Connection error: '+e.message,'log-err');}};
 function onDisc(){stopSession();
   log('Device disconnected','log-warn');
-  $('status').textContent='Not connected';$('status').classList.remove('on');
+  setRail('status','Not connected','off');
+  setRail('fwver','\u2014','off');
+  setRail('authpill','Locked','off');
   $('btnConnect').classList.remove('hidden');$('btnScanAll').classList.remove('hidden');
+  $('btnDisconnect').classList.add('hidden');
+  $('cardAuth').classList.add('hidden');
+  $('nav').classList.add('hidden');
   $('dfuBanner').classList.add('hidden');$('btnEnterDfu').disabled=false;
-  ['btnDisconnect','cardAuth','cardGen','cardFw','cardSlot','cardEst','cardProfile','authpill','fwver'].forEach(id=>$(id).classList.add('hidden'));}
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-log'));
+}
 $('btnDisconnect').onclick=()=>{if(device&&device.gatt.connected)device.gatt.disconnect();};
 
 // ---- unlock ----
@@ -355,7 +639,7 @@ $('btnUnlock').onclick=async()=>{try{
   const comb=new Uint8Array(pass.length+nonce.length);comb.set(pass,0);comb.set(nonce,pass.length);
   const hash=await crypto.subtle.digest('SHA-256',comb);
   await writeChar(chars.auth,new Uint8Array(hash));
-  log('Unlocked','log-ok');$('authpill').textContent='Unlocked';$('authpill').classList.add('on');
+  log('Unlocked','log-ok');setRail('authpill','Unlocked','live');
   await enterConfigMode();
 }catch(e){log('Unlock failed (wrong password?): '+e.message,'log-err');}};
 
@@ -365,9 +649,11 @@ async function readGeneral(){
   const b=new Uint8Array((await chars.gen.readValue()).buffer);
   const pwReq=b[0],conn=b[1],nlen=b[2];
   const name=new TextDecoder().decode(b.slice(3,3+nlen));
+  const pwrSave=(b.length>3+nlen)?b[3+nlen]:0;
   $('genName').value=name;$('genPwReq').checked=!!pwReq;$('genConn').checked=!!conn;
+  $('genPwrSave').checked=!!pwrSave;
   $('genPass').value='';
-  log(`General: name="${name}" pwreq=${pwReq} connectable=${conn}`);
+  log(`General: name="${name}" pwreq=${pwReq} connectable=${conn} powersave=${pwrSave}`);
 }
 function buildGenWrite(){
   const name=new TextEncoder().encode($('genName').value.slice(0,29));
@@ -377,6 +663,7 @@ function buildGenWrite(){
   buf.push($('genConn').checked?1:0);
   buf.push(name.length);name.forEach(x=>buf.push(x));
   buf.push(pass.length);pass.forEach(x=>buf.push(x));
+  buf.push($('genPwrSave').checked?1:0);
   return Uint8Array.from(buf);
 }
 $('btnGenApply').onclick=async()=>{try{await writeChar(chars.gen,buildGenWrite());
@@ -401,10 +688,10 @@ function showFrame(ft){
 function updatePhyWarn(){
   const phy=parseInt($('sPhy').value,10), ft=parseInt($('sFrame').value,10);
   let w='';
-  if(phy===1) w='2M-only advertising is invisible to almost all phones/scanners. Use only for 2M-capable receivers.';
-  else if(phy===2) w='Coded/Long-range uses Extended advertising - many phone apps and Web Bluetooth scanners cannot see it.';
+  if(phy===1) w='2M-only advertising is invisible to almost all phones and scanners. Use it only with 2M-capable receivers.';
+  else if(phy===2) w='Coded / long range uses extended advertising, which many phone apps and Web Bluetooth scanners cannot see.';
   if(phy!==0 && (ft===1||ft===2||ft===3||ft===4))
-    w+=(w?' ':'')+'iBeacon/Eddystone scanners expect legacy 1M; on extended PHY standard apps will NOT decode this frame.';
+    w+=(w?' ':'')+'iBeacon and Eddystone scanners expect legacy 1M; on an extended PHY standard apps will not decode this frame.';
   $('phyWarn').textContent=w;
 }
 $('sFrame').onchange=()=>showFrame(parseInt($('sFrame').value,10));
@@ -500,10 +787,11 @@ async function buildProfile(){
   const g=new Uint8Array((await chars.gen.readValue()).buffer);
   const pwreq=g[0],conn=g[1],nlen=g[2];
   const name=new TextDecoder().decode(g.slice(3,3+nlen));
+  const pwrsave=(g.length>3+nlen)?g[3+nlen]:0;
   const keep=curSlot,slots=[];
   for(let i=0;i<6;i++) slots.push(bytesToHex(await readSlotRaw(i)));
   await writeChar(chars.sel,Uint8Array.of(keep));curSlot=keep;markTab();
-  return {tapama:'cfg',v:devInfo.cfgVer||0,fw:devInfo.fw||'?',name,pwreq,conn,slots};
+  return {tapama:'cfg',v:devInfo.cfgVer||0,fw:devInfo.fw||'?',name,pwreq,conn,pwrsave,slots};
 }
 $('btnExport').onclick=async()=>{
   try{$('profileText').value=JSON.stringify(await buildProfile());log('Config exported - copy the JSON','log-ok');}
@@ -532,7 +820,9 @@ $('btnImport').onclick=async()=>{
      !confirm(`Profile cfgVersion ${p.v} differs from device ${devInfo.cfgVer}. Layout may differ. Import anyway?`)) return;
   try{
     const name=new TextEncoder().encode((p.name||'').slice(0,29));
-    const gbuf=[p.pwreq?1:0,p.conn?1:0,name.length];name.forEach(x=>gbuf.push(x));gbuf.push(0);
+    const gbuf=[p.pwreq?1:0,p.conn?1:0,name.length];name.forEach(x=>gbuf.push(x));
+    gbuf.push(0);                      /* pass_len = 0 -> keep device password */
+    gbuf.push(p.pwrsave?1:0);          /* config-set power-save mode */
     await writeChar(chars.gen,Uint8Array.from(gbuf));
     for(let i=0;i<6;i++){
       const blob=hexToBytes(p.slots[i]);
@@ -568,8 +858,8 @@ async function readBattery(){
   try{const dv=await chars.bat.readValue();return dv.getUint16(0,true);}catch(e){return null;}
 }
 function fmtDuration(days){
-  if(!isFinite(days)||days<=0) return '-';
-  return days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' days';
+  if(!isFinite(days)||days<=0) return '\u2014';
+  return days>365?(days/365).toFixed(1)+' yr':days.toFixed(0)+' d';
 }
 async function refreshEstimate(){
   try{await readAllSlots();}catch(e){return;}
@@ -577,7 +867,7 @@ async function refreshEstimate(){
   for(let i=0;i<6;i++){const b=slotCache[i];if(!b||!b[0])continue;
     const int=b[1]|(b[2]<<8),tx=s8(b[4]),phy=b[6];
     cur+=(1000/int)*eventCharge(tx,phy);}
-  $('estCur').textContent=cur.toFixed(0)+' uA';
+  $('estCur').textContent=cur.toFixed(0)+' \u00b5A';
   const mv=await readBattery();
   if(mv===null||mv===0){$('estVolt').textContent='n/a';$('estPct').textContent='n/a';$('estLife').textContent='n/a';return;}
   const pct=Math.max(0,Math.min(100,(mv-2400)/(3000-2400)*100));
@@ -590,17 +880,20 @@ async function refreshEstimate(){
 $('btnRefreshEst').onclick=refreshEstimate;
 $('pinType').onchange=refreshEstimate;
 
-// ============ Firmware update check (download only; install via Device Manager) ============
+// ---- firmware update check (download only; install via Device Manager) ----
 function cmpVer(a,b){const pa=String(a).split('.').map(Number),pb=String(b).split('.').map(Number);
   for(let i=0;i<3;i++){const d=(pa[i]||0)-(pb[i]||0);if(d)return d;}return 0;}
 $('btnEnterDfu').onclick=async()=>{
-  const ok=confirm('Enter UPDATE MODE?\n\n- The config session lock (3 min) will be turned off.\n- Config will be closed on this page.\n- The device will accept a firmware upload from nRF Connect Device Manager.\n\nIf you tapped this by mistake, just power-cycle the device to return to normal.\n\nContinue?');
+  const ok=confirm('Enter update mode?\n\n- The 3 minute session lock turns off.\n- Configuration closes on this page.\n- The device will accept a firmware upload from nRF Connect Device Manager.\n\nPower-cycle the device to cancel.\n\nContinue?');
   if(!ok)return;
   try{
     await writeChar(chars.cmd,Uint8Array.of(0x04));
     stopSession('Update mode');
-    // close config on this page - only the update instructions remain
-    ['cardGen','cardSlot','cardEst','cardProfile','cardAuth'].forEach(id=>$(id).classList.add('hidden'));
+    // leave only the firmware panel reachable while an update is pending
+    document.querySelectorAll('#nav button').forEach(b=>{
+      if(b.dataset.panel!=='firmware'&&b.dataset.panel!=='log') b.classList.add('hidden');
+    });
+    showPanel('firmware');
     $('btnEnterDfu').disabled=true;$('dfuBanner').classList.remove('hidden');
     log('Update mode enabled. Open nRF Connect Device Manager and upload the firmware. Power-cycle to cancel.','log-ok');
   }catch(e){log('Failed to enter update mode: '+e.message,'log-err');}
@@ -618,16 +911,16 @@ $('btnCheckFw').onclick=async()=>{
     if(cmpVer(m.version,cur)>0){
       $('fwDownload').href=m.url;$('fwDownload').classList.remove('hidden');
       $('fwNotes').textContent=m.notes?('Notes: '+m.notes):'';
-      log(`Update available: v${m.version} (current v${cur}) - click Download, then install via Device Manager`,'log-ok');
+      log(`Update available: v${m.version} (current v${cur}) - download it, then install via Device Manager`,'log-ok');
     }else{
-      $('fwNotes').textContent='You are running the latest firmware.';
+      $('fwNotes').textContent='This device is running the latest firmware.';
       log(`Firmware is up to date (current v${cur}, latest v${m.version})`,'log-ok');
     }
   }catch(e){log('Update check failed: '+e.message,'log-err');}
 };
 
 // ---- init ----
-if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome/Edge on desktop or Android.','log-err');}
+if(!navigator.bluetooth){log('This browser has no Web Bluetooth. Use Chrome or Edge on desktop or Android, or Bluefy on iOS.','log-err');}
 buildTxOptions();
 log('Ready. Click Connect.');
 </script>
